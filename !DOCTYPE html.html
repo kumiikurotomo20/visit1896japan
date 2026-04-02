@@ -406,13 +406,25 @@ function appRenderHistory() {
         
         if (!appState.showPastHistory && info.label === "PAST") return;
         
+        let pastVisitHtml = "";
+        if (info.label !== "PAST") {
+            const pastVisits = appState.records.filter(
+                x => x.pref === r.pref && x.city === r.city && getYearInfo(x.date).label === "PAST"
+            ).sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            if (pastVisits.length > 0) {
+                const earliestDate = pastVisits[0].date;
+                pastVisitHtml = `<span class="ml-3 text-[10px] font-black text-white bg-rose-500 px-2.5 py-1 rounded-lg shadow-sm">過去訪問アリ　${earliestDate}</span>`;
+            }
+        }
+        
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition-colors";
         tr.innerHTML = `
             <td class="py-4 px-2 font-mono text-slate-300 font-bold">#${displayIdx++}</td>
             <td class="py-4 px-2 font-bold text-slate-600">${r.date}</td>
             <td class="py-4 px-2"><span class="label-badge ${info.class}">${info.label}</span></td>
-            <td class="py-4 px-2 font-black text-slate-900">${r.pref} ${r.city}</td>
+            <td class="py-4 px-2 font-black text-slate-900">${r.pref} ${r.city}${pastVisitHtml}</td>
             <td class="py-4 px-2 text-right">
                 <button onclick="appOpenEdit(${r.id})" class="text-slate-300 hover:text-indigo-500 font-black text-lg p-2 mr-1">✏️</button>
                 <button onclick="appDel(${r.id})" class="text-slate-300 hover:text-rose-500 font-black text-lg p-2">✕</button>
