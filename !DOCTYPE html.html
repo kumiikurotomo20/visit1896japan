@@ -219,7 +219,7 @@ function getYearInfo(dateStr) {
     if (diffMonths < 24) return { label: "2ND YR", class: "bg-vivid-2", border: "border-vivid-2" };
     if (diffMonths < 36) return { label: "3RD YR", class: "bg-vivid-3", border: "border-vivid-3" };
     if (diffMonths < 48) return { label: "4TH YR", class: "bg-vivid-4", border: "border-vivid-4" };
-    return { label: "PAST", class: "bg-vivid-past", border: "border-vivid-past" };
+    return { label: "FUTURE", class: "bg-slate-200", border: "border-slate-200" };
 }
 
 function appTogglePastCity() {
@@ -264,13 +264,17 @@ function appRenderCycleSwitcher() {
 }
 
 function appRenderStats() {
+    const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
     const totalDenom = Object.values(appState.config.prefDenominators).reduce((a,b)=>a+b, 0);
-    const unique = new Set(appState.records.map(r => `${r.pref}-${r.city}`)).size;
-    const rate = (unique / totalDenom) * 100;
+    
+    const cycleUnique = new Set(currentRecords.map(r => `${r.pref}-${r.city}`)).size;
+    const allTimeUnique = new Set(appState.records.map(r => `${r.pref}-${r.city}`)).size;
+    
+    const rate = (cycleUnique / totalDenom) * 100;
     
     document.getElementById('ui-stat-rate').textContent = `${rate.toFixed(2)}%`;
     document.getElementById('ui-stat-progress').style.width = `${Math.min(rate, 100)}%`;
-    document.getElementById('ui-unique-count').textContent = unique;
+    document.getElementById('ui-unique-count').textContent = allTimeUnique;
     document.getElementById('ui-disp-cycle').textContent = appState.activeCycle + 1;
 }
 
@@ -287,8 +291,9 @@ function appCheckDuplicate() {
 
 function appRenderPrefList() {
     const ctn = document.getElementById('ui-pref-list'); ctn.innerHTML = '';
+    const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
     PREFS.forEach(p => {
-        const visitedCount = new Set(appState.records.filter(r => r.pref === p).map(r => r.city)).size;
+        const visitedCount = new Set(currentRecords.filter(r => r.pref === p).map(r => r.city)).size;
         const denom = appState.config.prefDenominators[p] || 0;
         const rate = denom > 0 ? (visitedCount / denom) * 100 : 0;
         
@@ -309,7 +314,8 @@ function appRenderCityGrid() {
     const ctn = document.getElementById('ui-city-grid'); ctn.innerHTML = '';
     document.getElementById('ui-current-pref-name').textContent = p;
     
-    const prefRecs = appState.records.filter(r => r.pref === p);
+    const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
+    const prefRecs = currentRecords.filter(r => r.pref === p);
     const uniqueCities = [...new Set(prefRecs.map(v => v.city))];
     const denom = appState.config.prefDenominators[p] || 0;
     
@@ -332,7 +338,8 @@ function appRenderCityGrid() {
 
 function appRenderHistory() {
     const tb = document.getElementById('ui-history-body'); tb.innerHTML = '';
-    const sorted = [...appState.records].sort((a,b) => new Date(a.date) - new Date(b.date)); // 古い順
+    const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
+    const sorted = [...currentRecords].sort((a,b) => new Date(a.date) - new Date(b.date)); // 古い順
     let displayIdx = 1;
     sorted.forEach((r) => {
         const info = getYearInfo(r.date);
