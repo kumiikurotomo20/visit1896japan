@@ -61,7 +61,13 @@ body { font-family: 'Noto Sans JP', sans-serif; background-color: #f0f7ff; color
     <div class="lg:col-span-9 space-y-8">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="card p-8">
-                <p class="text-[10px] font-black text-slate-400 uppercase mb-6 tracking-[0.2em]">■ 第<span id="ui-disp-cycle">1</span>周期 達成状況</p>
+                <div class="flex justify-between items-start mb-6">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">■ 第<span id="ui-disp-cycle">1</span>周期 達成状況</p>
+                    <div class="text-right">
+                        <p id="ui-cycle-period" class="text-[10px] font-bold text-slate-400">----/--/-- 〜 ----/--/--</p>
+                        <p id="ui-cycle-countdown" class="text-[11px] font-black text-indigo-500 mt-1"></p>
+                    </div>
+                </div>
                 <span id="ui-stat-rate" class="text-7xl font-black italic tracking-tighter text-slate-900">0.00%</span>
                 <div class="w-full bg-slate-100 h-4 rounded-full mt-6 overflow-hidden">
                     <div id="ui-stat-progress" class="bg-indigo-500 h-full transition-all duration-1000"></div>
@@ -283,6 +289,37 @@ function appRenderStats() {
     const allTimeUnique = new Set(appState.records.map(r => `${r.pref}-${r.city}`)).size;
     
     const rate = totalDenom > 0 ? (cycleUnique / totalDenom) * 100 : 0;
+    
+    const base = new Date(appState.config.baseStart);
+    const startYear = base.getFullYear() + (appState.activeCycle * 4);
+    const cycleStart = new Date(base);
+    cycleStart.setFullYear(startYear);
+    const cycleEnd = new Date(base);
+    cycleEnd.setFullYear(startYear + 4);
+    cycleEnd.setDate(cycleEnd.getDate() - 1);
+    
+    const fmt = d => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    let cdText = "";
+    let cdColor = "text-indigo-500";
+    if (today > cycleEnd) {
+        cdText = "終了しました";
+        cdColor = "text-slate-400";
+    } else if (today < cycleStart) {
+        cdText = "開始前";
+        cdColor = "text-slate-400";
+    } else {
+        const daysLeft = Math.ceil((cycleEnd.getTime() - today.getTime()) / 86400000);
+        cdText = `残り ${daysLeft} 日`;
+        if (daysLeft <= 30) cdColor = "text-rose-500";
+    }
+    
+    document.getElementById('ui-cycle-period').textContent = `${fmt(cycleStart)} 〜 ${fmt(cycleEnd)}`;
+    const cdEl = document.getElementById('ui-cycle-countdown');
+    cdEl.textContent = cdText;
+    cdEl.className = `text-[11px] font-black mt-1 ${cdColor}`;
     
     document.getElementById('ui-stat-rate').textContent = `${rate.toFixed(2)}%`;
     document.getElementById('ui-stat-progress').style.width = `${Math.min(rate, 100)}%`;
