@@ -367,7 +367,12 @@ function appRenderCityGrid() {
     
     const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
     const prefRecs = currentRecords.filter(r => r.pref === p);
-    const uniqueCities = [...new Set(prefRecs.map(v => v.city))];
+    
+    const sortedPrefRecs = [...prefRecs].sort((a,b) => {
+        const d = new Date(a.date) - new Date(b.date);
+        return d !== 0 ? d : a.id - b.id;
+    });
+    const uniqueCities = [...new Set(sortedPrefRecs.map(v => v.city))];
     const cycleDenom = appState.config.prefDenominators[appState.activeCycle] || appState.config.prefDenominators[0];
     const denom = cycleDenom[p] || 0;
     
@@ -391,7 +396,10 @@ function appRenderCityGrid() {
 function appRenderHistory() {
     const tb = document.getElementById('ui-history-body'); tb.innerHTML = '';
     const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
-    const sorted = [...currentRecords].sort((a,b) => new Date(a.date) - new Date(b.date)); // 古い順
+    const sorted = [...currentRecords].sort((a,b) => {
+        const d = new Date(a.date) - new Date(b.date);
+        return d !== 0 ? d : a.id - b.id;
+    }); // 古い順、同日は登録順
     let displayIdx = 1;
     sorted.forEach((r) => {
         const info = getYearInfo(r.date);
