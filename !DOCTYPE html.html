@@ -383,10 +383,26 @@ function appRenderCityGrid() {
         
         if (!appState.showPastCityGrid && info.label === "PAST") return;
         
+        let pastBadgeHtml = "";
+        if (info.label !== "PAST") {
+            const pastVisits = appState.records.filter(
+                x => x.pref === p && x.city === city && getYearInfo(x.date).label === "PAST"
+            ).sort((a,b) => new Date(b.date) - new Date(a.date));
+            if (pastVisits.length > 0) {
+                const recentDate = pastVisits[0].date;
+                pastBadgeHtml = `<div class="mt-3 text-[9px] font-black text-rose-500 bg-rose-50 border border-rose-100 py-1.5 px-1 rounded-lg leading-tight w-full break-words">過去訪問アリ<br>${recentDate}</div>`;
+            }
+        }
+        
         displayedCount++;
         const div = document.createElement('div');
-        div.className = `p-5 rounded-[24px] text-center bg-white shadow-sm border-2 ${info.border}`;
-        div.innerHTML = `<div class="text-[12px] font-black mb-3 text-slate-800">${city}</div><div class="label-badge ${info.class}">${info.label}</div>`;
+        div.className = `p-4 flex flex-col items-center justify-center rounded-[24px] text-center bg-white shadow-sm border-2 ${info.border}`;
+        div.innerHTML = `
+            <div class="text-[12px] font-black text-slate-800">${city}</div>
+            <div class="text-[9px] font-bold text-slate-400 mb-2">${latest.date}</div>
+            <div class="label-badge ${info.class}">${info.label}</div>
+            ${pastBadgeHtml}
+        `;
         ctn.appendChild(div);
     });
 
@@ -406,6 +422,12 @@ function appRenderHistory() {
         
         if (!appState.showPastHistory && info.label === "PAST") return;
         
+        if (info.label === "PAST") {
+            const hasCurrentVisit = appState.records.some(
+                x => x.pref === r.pref && x.city === r.city && getYearInfo(x.date).label !== "PAST" && getYearInfo(x.date).label !== "FUTURE"
+            );
+            if (hasCurrentVisit) return;
+        }
         let pastVisitHtml = "";
         if (info.label !== "PAST") {
             const pastVisits = appState.records.filter(
