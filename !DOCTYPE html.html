@@ -71,7 +71,7 @@ body { font-family: 'Noto Sans JP', sans-serif; background-color: #f0f7ff; color
                 <p class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">全期間 実質訪問数 (重複排除)</p>
                 <div class="flex items-baseline gap-2">
                     <span id="ui-unique-count" class="text-8xl font-black text-slate-900 tracking-tighter">0</span>
-                    <span class="text-3xl font-bold text-slate-200 italic">/ 1896</span>
+                    <span id="ui-total-denom" class="text-3xl font-bold text-slate-200 italic">/ 1896</span>
                 </div>
             </div>
         </div>
@@ -129,7 +129,10 @@ body { font-family: 'Noto Sans JP', sans-serif; background-color: #f0f7ff; color
         </div>
 
         <div class="flex-1 overflow-y-auto pr-4 scroll-hide border-t pt-6">
-            <p class="text-[10px] font-black text-indigo-500 mb-4 uppercase tracking-widest">▼ 各都道府県の分母設定</p>
+            <div class="flex justify-between items-center mb-4">
+                <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">▼ 各都道府県の分母設定</p>
+                <div class="flex gap-2" id="cfg-cycle-switcher"></div>
+            </div>
             <div id="cfg-pref-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4"></div>
         </div>
 
@@ -173,19 +176,27 @@ let appState = {
     records: [], 
     config: { 
         baseStart: '2022-04-01',
-        prefDenominators: {...DEFAULT_PREF_DATA} 
+        prefDenominators: [{...DEFAULT_PREF_DATA}, {...DEFAULT_PREF_DATA}, {...DEFAULT_PREF_DATA}, {...DEFAULT_PREF_DATA}] 
     }, 
     activeCycle: 0, 
     currentViewPref: "東京都",
     showPastCityGrid: true,
-    showPastHistory: true
+    showPastHistory: true,
+    editingCycle: 0
 };
 
 function appInit() {
     const r = localStorage.getItem('visit_v95_recs');
     const c = localStorage.getItem('visit_v95_cfg');
     if(r) appState.records = JSON.parse(r);
-    if(c) appState.config = JSON.parse(c);
+    if(c) {
+        let parsedCfg = JSON.parse(c);
+        if(!Array.isArray(parsedCfg.prefDenominators)) {
+            const old = parsedCfg.prefDenominators || {...DEFAULT_PREF_DATA};
+            parsedCfg.prefDenominators = [{...old}, {...old}, {...old}, {...old}];
+        }
+        appState.config = parsedCfg;
+    }
     
     PREFS.forEach(p => {
         const o = document.createElement('option');
@@ -265,17 +276,19 @@ function appRenderCycleSwitcher() {
 
 function appRenderStats() {
     const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
-    const totalDenom = Object.values(appState.config.prefDenominators).reduce((a,b)=>a+b, 0);
+    const cycleDenom = appState.config.prefDenominators[appState.activeCycle] || appState.config.prefDenominators[0];
+    const totalDenom = Object.values(cycleDenom).reduce((a,b)=>a+b, 0);
     
     const cycleUnique = new Set(currentRecords.map(r => `${r.pref}-${r.city}`)).size;
     const allTimeUnique = new Set(appState.records.map(r => `${r.pref}-${r.city}`)).size;
     
-    const rate = (cycleUnique / totalDenom) * 100;
+    const rate = totalDenom > 0 ? (cycleUnique / totalDenom) * 100 : 0;
     
     document.getElementById('ui-stat-rate').textContent = `${rate.toFixed(2)}%`;
     document.getElementById('ui-stat-progress').style.width = `${Math.min(rate, 100)}%`;
     document.getElementById('ui-unique-count').textContent = allTimeUnique;
     document.getElementById('ui-disp-cycle').textContent = appState.activeCycle + 1;
+    document.getElementById('ui-total-denom').textContent = `/ ${totalDenom}`;
 }
 
 function appCheckDuplicate() {
@@ -294,7 +307,8 @@ function appRenderPrefList() {
     const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
     PREFS.forEach(p => {
         const visitedCount = new Set(currentRecords.filter(r => r.pref === p).map(r => r.city)).size;
-        const denom = appState.config.prefDenominators[p] || 0;
+        const cycleDenom = appState.config.prefDenominators[appState.activeCycle] || appState.config.prefDenominators[0];
+        const denom = cycleDenom[p] || 0;
         const rate = denom > 0 ? (visitedCount / denom) * 100 : 0;
         
         const div = document.createElement('div');
@@ -317,7 +331,8 @@ function appRenderCityGrid() {
     const currentRecords = appState.records.filter(r => getYearInfo(r.date).label !== "FUTURE");
     const prefRecs = currentRecords.filter(r => r.pref === p);
     const uniqueCities = [...new Set(prefRecs.map(v => v.city))];
-    const denom = appState.config.prefDenominators[p] || 0;
+    const cycleDenom = appState.config.prefDenominators[appState.activeCycle] || appState.config.prefDenominators[0];
+    const denom = cycleDenom[p] || 0;
     
     let displayedCount = 0;
     uniqueCities.forEach(city => {
@@ -404,14 +419,29 @@ function appSaveEdit() {
 function appOpenSettings() {
     document.getElementById('modal-settings').style.display = 'flex';
     document.getElementById('cfg-start').value = appState.config.baseStart;
+    appState.editingCycle = appState.activeCycle;
     appRenderCfgGrid();
 }
 
 function appRenderCfgGrid() {
+    const switcher = document.getElementById('cfg-cycle-switcher');
+    if (switcher) {
+        switcher.innerHTML = '';
+        for(let i=0; i<4; i++) {
+            const btn = document.createElement('button');
+            btn.className = `px-3 py-1.5 text-[11px] font-black rounded-lg transition-all ${appState.editingCycle === i ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 bg-slate-100'}`;
+            btn.textContent = `第${i+1}周期`;
+            btn.type = "button";
+            btn.onclick = () => { appState.editingCycle = i; appRenderCfgGrid(); };
+            switcher.appendChild(btn);
+        }
+    }
+
     const ctn = document.getElementById('cfg-pref-grid'); ctn.innerHTML = '';
     let total = 0;
+    const currentEditDenoms = appState.config.prefDenominators[appState.editingCycle] || appState.config.prefDenominators[0];
     PREFS.forEach(p => {
-        const val = appState.config.prefDenominators[p] || 0;
+        const val = currentEditDenoms[p] || 0;
         total += val;
         const div = document.createElement('div');
         div.innerHTML = `
@@ -423,7 +453,10 @@ function appRenderCfgGrid() {
 }
 
 function appUpdateDenom(p, v) {
-    appState.config.prefDenominators[p] = parseInt(v) || 0;
+    if (!appState.config.prefDenominators[appState.editingCycle]) {
+        appState.config.prefDenominators[appState.editingCycle] = {...DEFAULT_PREF_DATA};
+    }
+    appState.config.prefDenominators[appState.editingCycle][p] = parseInt(v) || 0;
     appRenderCfgGrid();
 }
 
