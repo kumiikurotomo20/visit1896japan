@@ -102,8 +102,12 @@
                         class="text-xs text-indigo-500 ml-2">V9.5</span></h1>
             </div>
             <div class="flex gap-2" id="header-cycle-switcher"></div>
-            <button onclick="appOpenSettings()"
-                class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all">⚙️ 周期・分母設定</button>
+            <div class="flex items-center gap-3">
+                <button onclick="appOpenSettings()"
+                    class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all">⚙️ 周期・分母設定</button>
+                <button onclick="appLogout()" title="ログアウト"
+                    class="bg-rose-50 hover:bg-rose-100 text-rose-500 p-3 rounded-2xl transition-all font-black">🚪</button>
+            </div>
         </div>
     </header>
 
@@ -275,6 +279,27 @@
         </div>
     </div>
 
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
+        <div class="bg-white rounded-[40px] w-full max-w-sm p-10 flex flex-col shadow-2xl">
+            <h2 class="font-black text-3xl tracking-tighter italic mb-2 text-center text-slate-800">Welcome Back</h2>
+            <p class="text-center text-xs font-bold text-slate-400 mb-8">お帰りなさいませ。記録を再開しましょう。</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">Email</label>
+                    <input type="email" id="auth-email" class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">Password</label>
+                    <input type="password" id="auth-pass" class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="••••••••">
+                </div>
+            </div>
+            
+            <button onclick="appLogin()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-slate-900 transition-all active:scale-95 mt-8">ログイン</button>
+            <button onclick="appRegister()" class="w-full text-slate-400 text-xs font-bold hover:text-slate-900 transition-colors mt-4">または新規登録 (初回のみ)</button>
+        </div>
+    </div>
+
     <script>
         // 初期データ
         const DEFAULT_PREF_DATA = { "北海道": 188, "青森県": 40, "岩手県": 33, "宮城県": 39, "秋田県": 25, "山形県": 35, "福島県": 59, "茨城県": 44, "栃木県": 25, "群馬県": 35, "埼玉県": 72, "千葉県": 59, "東京都": 62, "神奈川県": 58, "新潟県": 37, "富山県": 15, "石川県": 19, "福井県": 17, "山梨県": 27, "長野県": 77, "岐阜県": 42, "静岡県": 43, "愛知県": 69, "三重県": 29, "滋賀県": 19, "京都府": 36, "大阪府": 72, "兵庫県": 49, "奈良県": 39, "和歌山県": 30, "鳥取県": 19, "島根県": 19, "岡山県": 30, "広島県": 30, "山口県": 19, "徳島県": 24, "香川県": 17, "愛媛県": 20, "高知県": 34, "福岡県": 72, "佐賀県": 20, "長崎県": 21, "熊本県": 49, "大分県": 18, "宮崎県": 26, "鹿児島県": 43, "沖縄県": 41 };
@@ -295,6 +320,12 @@
         };
 
         function appInit() {
+            if (sessionStorage.getItem('visit_v95_session') !== 'active') {
+                document.getElementById('login-overlay').style.display = 'flex';
+            } else {
+                document.getElementById('login-overlay').style.display = 'none';
+            }
+
             const r = localStorage.getItem('visit_v95_recs');
             const c = localStorage.getItem('visit_v95_cfg');
             if (r) appState.records = JSON.parse(r);
@@ -315,6 +346,44 @@
 
             updateActiveCycle();
             appRenderAll();
+        }
+
+        function appLogin() {
+            const e = document.getElementById('auth-email').value.trim();
+            const p = document.getElementById('auth-pass').value.trim();
+            if (!e || !p) return alert("メールアドレスとパスワードを入力してください");
+            
+            const savedE = localStorage.getItem('visit_v95_auth_email');
+            const savedP = localStorage.getItem('visit_v95_auth_pass');
+            
+            if (savedE === e && savedP === p) {
+                sessionStorage.setItem('visit_v95_session', 'active');
+                document.getElementById('login-overlay').style.display = 'none';
+            } else {
+                alert("メールアドレスかパスワードが間違っています。");
+            }
+        }
+        
+        function appRegister() {
+            const e = document.getElementById('auth-email').value.trim();
+            const p = document.getElementById('auth-pass').value.trim();
+            if (!e || !p) return alert("メールアドレスとパスワードを入力してください");
+            
+            const savedE = localStorage.getItem('visit_v95_auth_email');
+            if (savedE) return alert("既にアカウントが登録されています。ログインしてください。");
+            
+            localStorage.setItem('visit_v95_auth_email', e);
+            localStorage.setItem('visit_v95_auth_pass', p);
+            alert("登録が完了しました！そのままログインします。");
+            appLogin();
+        }
+
+        function appLogout() {
+            if(!confirm("ログアウトしますか？")) return;
+            sessionStorage.removeItem('visit_v95_session');
+            document.getElementById('auth-email').value = "";
+            document.getElementById('auth-pass').value = "";
+            document.getElementById('login-overlay').style.display = 'flex';
         }
 
         function updateActiveCycle() {
