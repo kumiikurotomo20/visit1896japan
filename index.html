@@ -105,8 +105,8 @@
             <div class="flex items-center gap-3">
                 <button onclick="appOpenSettings()"
                     class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all">⚙️ 周期・分母設定</button>
-                <button onclick="appLogout()" title="ログアウト"
-                    class="bg-rose-50 hover:bg-rose-100 text-rose-500 p-3 rounded-2xl transition-all font-black">🚪</button>
+                <button id="btn-logout" onclick="appLogout()" title="ログアウト"
+                    class="bg-rose-50 hover:bg-rose-100 text-rose-500 p-3 rounded-2xl transition-all font-black" style="display:none;">🚪</button>
             </div>
         </div>
     </header>
@@ -214,7 +214,14 @@
                     class="text-slate-300 hover:text-slate-900 text-2xl">✕</button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-slate-50 p-6 rounded-3xl">
+                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">ログイン機能</label>
+                    <div class="flex items-center gap-3 mt-4">
+                        <input type="checkbox" id="cfg-require-login" class="w-6 h-6 accent-indigo-600 shadow-sm cursor-pointer border-gray-300 rounded">
+                        <label for="cfg-require-login" class="text-xs font-bold text-slate-600 cursor-pointer">パスワード保護を有効にする</label>
+                    </div>
+                </div>
                 <div class="bg-slate-50 p-6 rounded-3xl">
                     <label
                         class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">周期の基準開始日</label>
@@ -222,8 +229,7 @@
                         class="w-full bg-white border p-4 rounded-2xl font-bold outline-none">
                 </div>
                 <div class="bg-slate-50 p-6 rounded-3xl">
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">全市区町村
-                        総分母</label>
+                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">全市区町村総分母</label>
                     <input type="number" id="cfg-total-denominator"
                         class="w-full bg-slate-200 border p-4 rounded-2xl font-black outline-none" readonly>
                 </div>
@@ -310,6 +316,7 @@
             enrichedRecords: [],
             config: {
                 baseStart: '2022-04-01',
+                requireLogin: false,
                 prefDenominators: [{ ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }]
             },
             activeCycle: 0,
@@ -320,12 +327,6 @@
         };
 
         function appInit() {
-            if (sessionStorage.getItem('visit_v95_session') !== 'active') {
-                document.getElementById('login-overlay').style.display = 'flex';
-            } else {
-                document.getElementById('login-overlay').style.display = 'none';
-            }
-
             const r = localStorage.getItem('visit_v95_recs');
             const c = localStorage.getItem('visit_v95_cfg');
             if (r) appState.records = JSON.parse(r);
@@ -335,7 +336,14 @@
                     const old = parsedCfg.prefDenominators || { ...DEFAULT_PREF_DATA };
                     parsedCfg.prefDenominators = [{ ...old }, { ...old }, { ...old }, { ...old }];
                 }
+                if (parsedCfg.requireLogin === undefined) parsedCfg.requireLogin = false;
                 appState.config = parsedCfg;
+            }
+
+            if (appState.config.requireLogin && sessionStorage.getItem('visit_v95_session') !== 'active') {
+                document.getElementById('login-overlay').style.display = 'flex';
+            } else {
+                document.getElementById('login-overlay').style.display = 'none';
             }
 
             PREFS.forEach(p => {
@@ -432,6 +440,13 @@
         }
 
         function appRenderAll() {
+            if (appState.config.requireLogin && sessionStorage.getItem('visit_v95_session') !== 'active') {
+                document.getElementById('login-overlay').style.display = 'flex';
+            } else {
+                document.getElementById('login-overlay').style.display = 'none';
+            }
+            document.getElementById('btn-logout').style.display = appState.config.requireLogin ? '' : 'none';
+
             appState.enrichedRecords = appState.records.map(r => ({
                 ...r,
                 ts: new Date(r.date).getTime(),
@@ -709,6 +724,7 @@
         function appOpenSettings() {
             document.getElementById('modal-settings').style.display = 'flex';
             document.getElementById('cfg-start').value = appState.config.baseStart;
+            document.getElementById('cfg-require-login').checked = appState.config.requireLogin;
             appState.editingCycle = appState.activeCycle;
             appRenderCfgGrid();
         }
@@ -752,6 +768,7 @@
 
         function appSaveSettings() {
             appState.config.baseStart = document.getElementById('cfg-start').value;
+            appState.config.requireLogin = document.getElementById('cfg-require-login').checked;
             document.getElementById('modal-settings').style.display = 'none';
             updateActiveCycle();
             appRenderAll();
