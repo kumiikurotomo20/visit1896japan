@@ -170,9 +170,10 @@
                             <h3 id="ui-current-pref-name" class="text-5xl font-black text-slate-800 tracking-tighter">訪問地</h3>
                             <button onclick="appTogglePastCity()" id="btn-toggle-past-upper"
                                 class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️ 過去分を隠す</button>
-                        </div>
-                        <div id="ui-map-container" class="w-full h-[350px] bg-slate-50 border-2 border-slate-100 rounded-[32px] relative overflow-hidden flex items-center justify-center">
-                            <div id="ui-map-loading" class="font-bold text-slate-400 text-[11px] animate-pulse">地図データを取得中...</div>
+                            <button onclick="appOpenMapModal()"
+                                class="px-4 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
+                                <span class="text-sm">🗺️</span> マップ表示
+                            </button>
                         </div>
                     </div>
                     <div class="text-right whitespace-nowrap mb-2">
@@ -309,6 +310,25 @@
             
             <button onclick="appLogin()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-slate-900 transition-all active:scale-95 mt-8">ログイン</button>
             <button onclick="appRegister()" class="w-full text-slate-400 text-xs font-bold hover:text-slate-900 transition-colors mt-4">または新規登録 (初回のみ)</button>
+        </div>
+    </div>
+
+    <div id="modal-map"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+        style="display:none;">
+        <div class="bg-white rounded-[40px] w-full max-w-5xl h-[85vh] p-8 flex flex-col shadow-2xl relative">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-black text-2xl tracking-tighter italic flex items-center gap-3 text-slate-800">
+                    <span class="text-3xl">🗺️</span>
+                    <span id="ui-map-modal-title">東京都 マップ</span>
+                </h3>
+                <button onclick="document.getElementById('modal-map').style.display='none'"
+                    class="text-slate-300 hover:text-rose-500 text-3xl font-black transition-colors px-2">✕</button>
+            </div>
+            
+            <div id="ui-map-container" class="flex-1 w-full bg-slate-50 rounded-[32px] border-2 border-slate-100 relative overflow-hidden flex items-center justify-center">
+                <div id="ui-map-loading" class="font-bold text-slate-400 text-[11px] animate-pulse absolute inset-0 flex items-center justify-center bg-white/50 z-10" style="display:none;">地図データを取得中...</div>
+            </div>
         </div>
     </div>
 
@@ -640,18 +660,23 @@
             });
 
             document.getElementById('ui-pref-fraction').textContent = `${displayedCount} / ${denom}`;
-            appRenderMap();
         }
 
         let currentGeoJson = null;
         let currentMapPref = null;
 
+        function appOpenMapModal() {
+            document.getElementById('modal-map').style.display = 'flex';
+            document.getElementById('ui-map-modal-title').textContent = `${appState.currentViewPref} マップ`;
+            appRenderMap();
+        }
+
         async function appRenderMap() {
             const p = appState.currentViewPref;
             const ctn = document.getElementById('ui-map-container');
-            if (!ctn) return;
+            if (!ctn || document.getElementById('modal-map').style.display === 'none') return;
             const width = ctn.clientWidth;
-            const height = 350; // container fixed height
+            const height = ctn.clientHeight;
             
             const loader = document.getElementById('ui-map-loading');
             
