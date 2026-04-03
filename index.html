@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>市区町村訪問マスター V9.5 (Custom Denominator)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
 
@@ -93,6 +95,7 @@
 </head>
 
 <body class="min-h-screen pb-12">
+    <div id="ui-map-tooltip" class="fixed hidden bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-2xl pointer-events-none z-[100]"></div>
 
     <header class="bg-white border-b sticky top-0 z-40">
         <div class="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
@@ -161,15 +164,18 @@
             </div>
 
             <div class="card p-8 min-h-[300px]">
-                <div class="flex justify-between items-end mb-10 border-b pb-6">
-                    <div class="flex items-center gap-4">
-                        <h3 id="ui-current-pref-name" class="text-5xl font-black text-slate-800 tracking-tighter">訪問地
-                        </h3>
-                        <button onclick="appTogglePastCity()" id="btn-toggle-past-upper"
-                            class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️
-                            過去分を隠す</button>
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
+                    <div class="flex-1 w-full">
+                        <div class="flex items-center gap-4 mb-4">
+                            <h3 id="ui-current-pref-name" class="text-5xl font-black text-slate-800 tracking-tighter">訪問地</h3>
+                            <button onclick="appTogglePastCity()" id="btn-toggle-past-upper"
+                                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️ 過去分を隠す</button>
+                        </div>
+                        <div id="ui-map-container" class="w-full h-[350px] bg-slate-50 border-2 border-slate-100 rounded-[32px] relative overflow-hidden flex items-center justify-center">
+                            <div id="ui-map-loading" class="font-bold text-slate-400 text-[11px] animate-pulse">地図データを取得中...</div>
+                        </div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right whitespace-nowrap mb-2">
                         <span id="ui-pref-fraction"
                             class="text-xl font-black bg-slate-900 text-white px-6 py-2 rounded-2xl shadow-lg">0 /
                             0</span>
@@ -310,6 +316,7 @@
         // 初期データ
         const DEFAULT_PREF_DATA = { "北海道": 188, "青森県": 40, "岩手県": 33, "宮城県": 39, "秋田県": 25, "山形県": 35, "福島県": 59, "茨城県": 44, "栃木県": 25, "群馬県": 35, "埼玉県": 72, "千葉県": 59, "東京都": 62, "神奈川県": 58, "新潟県": 37, "富山県": 15, "石川県": 19, "福井県": 17, "山梨県": 27, "長野県": 77, "岐阜県": 42, "静岡県": 43, "愛知県": 69, "三重県": 29, "滋賀県": 19, "京都府": 36, "大阪府": 72, "兵庫県": 49, "奈良県": 39, "和歌山県": 30, "鳥取県": 19, "島根県": 19, "岡山県": 30, "広島県": 30, "山口県": 19, "徳島県": 24, "香川県": 17, "愛媛県": 20, "高知県": 34, "福岡県": 72, "佐賀県": 20, "長崎県": 21, "熊本県": 49, "大分県": 18, "宮崎県": 26, "鹿児島県": 43, "沖縄県": 41 };
         const PREFS = Object.keys(DEFAULT_PREF_DATA);
+        const PREF_CODES = { "北海道": "01", "青森県": "02", "岩手県": "03", "宮城県": "04", "秋田県": "05", "山形県": "06", "福島県": "07", "茨城県": "08", "栃木県": "09", "群馬県": "10", "埼玉県": "11", "千葉県": "12", "東京都": "13", "神奈川県": "14", "新潟県": "15", "富山県": "16", "石川県": "17", "福井県": "18", "山梨県": "19", "長野県": "20", "岐阜県": "21", "静岡県": "22", "愛知県": "23", "三重県": "24", "滋賀県": "25", "京都府": "26", "大阪府": "27", "兵庫県": "28", "奈良県": "29", "和歌山県": "30", "鳥取県": "31", "島根県": "32", "岡山県": "33", "広島県": "34", "山口県": "35", "徳島県": "36", "香川県": "37", "愛媛県": "38", "高知県": "39", "福岡県": "40", "佐賀県": "41", "長崎県": "42", "熊本県": "43", "大分県": "44", "宮崎県": "45", "鹿児島県": "46", "沖縄県": "47" };
 
         let appState = {
             records: [],
@@ -633,6 +640,101 @@
             });
 
             document.getElementById('ui-pref-fraction').textContent = `${displayedCount} / ${denom}`;
+            appRenderMap();
+        }
+
+        let currentGeoJson = null;
+        let currentMapPref = null;
+
+        async function appRenderMap() {
+            const p = appState.currentViewPref;
+            const ctn = document.getElementById('ui-map-container');
+            if (!ctn) return;
+            const width = ctn.clientWidth;
+            const height = 350; // container fixed height
+            
+            const loader = document.getElementById('ui-map-loading');
+            
+            if (currentMapPref !== p) {
+                loader.style.display = 'flex';
+                d3.select("#ui-map-container svg").remove();
+                try {
+                    const code = PREF_CODES[p];
+                    const url = `https://geoshape.ex.nii.ac.jp/city/topojson/20230101/${code}/${code}_city.topojson`;
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error("fetch failed");
+                    const topo = await res.json();
+                    
+                    const key = Object.keys(topo.objects)[0];
+                    currentGeoJson = topojson.feature(topo, topo.objects[key]);
+                    currentMapPref = p;
+                } catch (e) {
+                    console.error("Map Load Error", e);
+                    loader.style.display = 'none';
+                    return;
+                }
+            }
+            
+            loader.style.display = 'none';
+            d3.select("#ui-map-container svg").remove();
+            
+            const svg = d3.select("#ui-map-container").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+                
+            const projection = d3.geoMercator().fitSize([width, height], currentGeoJson);
+            const path = d3.geoPath().projection(projection);
+            
+            svg.append("g")
+               .selectAll("path")
+               .data(currentGeoJson.features)
+               .join("path")
+               .attr("d", path)
+               .attr("stroke", "#ffffff")
+               .attr("stroke-width", 0.5)
+               .attr("fill", d => {
+                   let cityName = d.properties.city_name || d.properties.name || "";
+                   let gunName = d.properties.gun_name || "";
+                   let fullName = gunName + cityName;
+                   
+                   const cityRecs = appState.enrichedRecords.filter(r => r.pref === p);
+                   // gunNameが含まれる場合と含まれない場合双方でマッチングを試行
+                   let matchedRec = cityRecs.find(r => r.city === fullName || r.city === cityName);
+                   
+                   // 過去分非表示状態の場合、最新ログがPASTであれば塗らない（グレーにする）
+                   if (matchedRec) {
+                       const rc = cityRecs.filter(r => r.city === fullName || r.city === cityName).sort((a,b)=>b.ts - a.ts);
+                       const latestInfo = rc[0].info;
+                       if (!appState.showPastCityGrid && latestInfo.label === "PAST") return "#f1f5f9"; // faint gray for hidden past
+
+                       const l = latestInfo.label;
+                       if (l === "1ST YR") return "#ff2d55";
+                       if (l === "2ND YR") return "#ffcc00";
+                       if (l === "3RD YR") return "#00e676";
+                       if (l === "4TH YR") return "#00d4ff";
+                       if (l === "PAST") return "#cbd5e1";
+                   }
+                   return "#f1f5f9"; // default faint gray
+               })
+               .style("cursor", "pointer")
+               .style("transition", "opacity 0.2s")
+               .on("mouseover", function(e, d) {
+                   d3.select(this).attr("opacity", 0.7);
+                   let gunName = d.properties.gun_name || "";
+                   let cityName = d.properties.city_name || d.properties.name || "";
+                   const tt = document.getElementById('ui-map-tooltip');
+                   tt.style.display = "block";
+                   tt.innerHTML = gunName + cityName;
+               })
+               .on("mousemove", function(e) {
+                   const tt = document.getElementById('ui-map-tooltip');
+                   tt.style.left = (e.clientX + 15) + "px";
+                   tt.style.top = (e.clientY + 15) + "px";
+               })
+               .on("mouseout", function() {
+                   d3.select(this).attr("opacity", 1);
+                   document.getElementById('ui-map-tooltip').style.display = "none";
+               });
         }
 
         function appRenderHistory() {
