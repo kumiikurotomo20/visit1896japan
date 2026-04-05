@@ -6,8 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>市区町村訪問マスター V9.5 (Custom Denominator)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://unpkg.com/topojson-client@3"></script>
+    <!-- Leaflet Configuration -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Map Data (Converted to JS for Local Execution) -->
+    <script src="japan_map_data.js"></script>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
 
@@ -108,8 +114,6 @@
             <div class="flex items-center gap-3">
                 <button onclick="appOpenSettings()"
                     class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all">⚙️ 周期・分母設定</button>
-                <button id="btn-logout" onclick="appLogout()" title="ログアウト"
-                    class="bg-rose-50 hover:bg-rose-100 text-rose-500 p-3 rounded-2xl transition-all font-black" style="display:none;">🚪</button>
             </div>
         </div>
     </header>
@@ -174,6 +178,10 @@
                                 class="px-4 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
                                 <span class="text-sm">🗺️</span> マップ表示
                             </button>
+                            <button onclick="appOpenNationalMapModal()"
+                                class="px-4 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
+                                <span class="text-sm">🇯🇵</span> 全国マップ表示
+                            </button>
                         </div>
                     </div>
                     <div class="text-right whitespace-nowrap mb-2">
@@ -221,14 +229,7 @@
                     class="text-slate-300 hover:text-slate-900 text-2xl">✕</button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-slate-50 p-6 rounded-3xl">
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">ログイン機能</label>
-                    <div class="flex items-center gap-3 mt-4">
-                        <input type="checkbox" id="cfg-require-login" class="w-6 h-6 accent-indigo-600 shadow-sm cursor-pointer border-gray-300 rounded">
-                        <label for="cfg-require-login" class="text-xs font-bold text-slate-600 cursor-pointer">パスワード保護を有効にする</label>
-                    </div>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="bg-slate-50 p-6 rounded-3xl">
                     <label
                         class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">周期の基準開始日</label>
@@ -292,27 +293,6 @@
         </div>
     </div>
 
-    <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] w-full max-w-sm p-10 flex flex-col shadow-2xl">
-            <h2 class="font-black text-3xl tracking-tighter italic mb-2 text-center text-slate-800">Welcome Back</h2>
-            <p class="text-center text-xs font-bold text-slate-400 mb-8">お帰りなさいませ。記録を再開しましょう。</p>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">Email</label>
-                    <input type="email" id="auth-email" class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="you@example.com">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">Password</label>
-                    <input type="password" id="auth-pass" class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="••••••••">
-                </div>
-            </div>
-            
-            <button onclick="appLogin()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-slate-900 transition-all active:scale-95 mt-8">ログイン</button>
-            <button onclick="appRegister()" class="w-full text-slate-400 text-xs font-bold hover:text-slate-900 transition-colors mt-4">または新規登録 (初回のみ)</button>
-        </div>
-    </div>
-
     <div id="modal-map"
         class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
         style="display:none;">
@@ -326,13 +306,30 @@
                     class="text-slate-300 hover:text-rose-500 text-3xl font-black transition-colors px-2">✕</button>
             </div>
             
-            <div id="ui-map-container" class="flex-1 w-full bg-slate-50 rounded-[32px] border-2 border-slate-100 relative overflow-hidden flex items-center justify-center">
-                <div id="ui-map-loading" class="font-bold text-slate-400 text-[11px] animate-pulse absolute inset-0 flex items-center justify-center bg-white/50 z-10" style="display:none;">地図データを取得中...</div>
+            <div id="ui-map-container" class="flex-1 w-full bg-white rounded-[32px] border-2 border-slate-100 relative overflow-hidden flex items-center justify-center z-10">
+                <div id="ui-map-loading" class="font-bold text-slate-400 text-[11px] animate-pulse absolute inset-0 flex items-center justify-center bg-slate-50 z-20" style="display:none;">地図データを取得中...</div>
             </div>
         </div>
     </div>
 
     <script>
+        // ★★★ Firebase接続設定（ご自身のプロジェクト設定に書き換えてください） ★★★
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // Firebase初期化
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function getSyncDocRef() {
+            return db.collection('shikuchoson_visits').doc('shared_data');
+        }
+
         // 初期データ
         const DEFAULT_PREF_DATA = { "北海道": 188, "青森県": 40, "岩手県": 33, "宮城県": 39, "秋田県": 25, "山形県": 35, "福島県": 59, "茨城県": 44, "栃木県": 25, "群馬県": 35, "埼玉県": 72, "千葉県": 59, "東京都": 62, "神奈川県": 58, "新潟県": 37, "富山県": 15, "石川県": 19, "福井県": 17, "山梨県": 27, "長野県": 77, "岐阜県": 42, "静岡県": 43, "愛知県": 69, "三重県": 29, "滋賀県": 19, "京都府": 36, "大阪府": 72, "兵庫県": 49, "奈良県": 39, "和歌山県": 30, "鳥取県": 19, "島根県": 19, "岡山県": 30, "広島県": 30, "山口県": 19, "徳島県": 24, "香川県": 17, "愛媛県": 20, "高知県": 34, "福岡県": 72, "佐賀県": 20, "長崎県": 21, "熊本県": 49, "大分県": 18, "宮崎県": 26, "鹿児島県": 43, "沖縄県": 41 };
         const PREFS = Object.keys(DEFAULT_PREF_DATA);
@@ -343,7 +340,6 @@
             enrichedRecords: [],
             config: {
                 baseStart: '2022-04-01',
-                requireLogin: false,
                 prefDenominators: [{ ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }]
             },
             activeCycle: 0,
@@ -354,23 +350,16 @@
         };
 
         function appInit() {
-            const r = localStorage.getItem('visit_v95_recs');
-            const c = localStorage.getItem('visit_v95_cfg');
-            if (r) appState.records = JSON.parse(r);
-            if (c) {
-                let parsedCfg = JSON.parse(c);
+            const rLocal = localStorage.getItem('visit_v95_recs');
+            const cLocal = localStorage.getItem('visit_v95_cfg');
+            if (rLocal) appState.records = JSON.parse(rLocal);
+            if (cLocal) {
+                let parsedCfg = JSON.parse(cLocal);
                 if (!Array.isArray(parsedCfg.prefDenominators)) {
                     const old = parsedCfg.prefDenominators || { ...DEFAULT_PREF_DATA };
                     parsedCfg.prefDenominators = [{ ...old }, { ...old }, { ...old }, { ...old }];
                 }
-                if (parsedCfg.requireLogin === undefined) parsedCfg.requireLogin = false;
                 appState.config = parsedCfg;
-            }
-
-            if (appState.config.requireLogin && sessionStorage.getItem('visit_v95_session') !== 'active') {
-                document.getElementById('login-overlay').style.display = 'flex';
-            } else {
-                document.getElementById('login-overlay').style.display = 'none';
             }
 
             PREFS.forEach(p => {
@@ -380,45 +369,36 @@
             });
 
             updateActiveCycle();
-            appRenderAll();
-        }
 
-        function appLogin() {
-            const e = document.getElementById('auth-email').value.trim();
-            const p = document.getElementById('auth-pass').value.trim();
-            if (!e || !p) return alert("メールアドレスとパスワードを入力してください");
-            
-            const savedE = localStorage.getItem('visit_v95_auth_email');
-            const savedP = localStorage.getItem('visit_v95_auth_pass');
-            
-            if (savedE === e && savedP === p) {
-                sessionStorage.setItem('visit_v95_session', 'active');
-                document.getElementById('login-overlay').style.display = 'none';
-            } else {
-                alert("メールアドレスかパスワードが間違っています。");
+            // Firebaseリアルタイム同期のリスナー設定
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                getSyncDocRef().onSnapshot({ includeMetadataChanges: true }, (doc) => {
+                    // 自端末からの更新(hasPendingWrites)は反映済みのため無視する
+                    if (doc.metadata.hasPendingWrites) return;
+
+                    if (doc.exists) {
+                        const data = doc.data();
+                        let needsRender = false;
+                        if (data.records && JSON.stringify(appState.records) !== JSON.stringify(data.records)) {
+                            appState.records = data.records;
+                            needsRender = true;
+                        }
+                        if (data.config && JSON.stringify(appState.config) !== JSON.stringify(data.config)) {
+                            appState.config = data.config;
+                            needsRender = true;
+                        }
+                        // リモートからの変更があれば描画し、再度保存しないように防ぐ
+                        if (needsRender) {
+                            appRenderAll(true);
+                        }
+                    } else if (appState.records.length > 0) {
+                        // リモートが空でローカルにデータがあればリモートを初期化
+                        appRenderAll(false);
+                    }
+                });
             }
-        }
-        
-        function appRegister() {
-            const e = document.getElementById('auth-email').value.trim();
-            const p = document.getElementById('auth-pass').value.trim();
-            if (!e || !p) return alert("メールアドレスとパスワードを入力してください");
-            
-            const savedE = localStorage.getItem('visit_v95_auth_email');
-            if (savedE) return alert("既にアカウントが登録されています。ログインしてください。");
-            
-            localStorage.setItem('visit_v95_auth_email', e);
-            localStorage.setItem('visit_v95_auth_pass', p);
-            alert("登録が完了しました！そのままログインします。");
-            appLogin();
-        }
 
-        function appLogout() {
-            if(!confirm("ログアウトしますか？")) return;
-            sessionStorage.removeItem('visit_v95_session');
-            document.getElementById('auth-email').value = "";
-            document.getElementById('auth-pass').value = "";
-            document.getElementById('login-overlay').style.display = 'flex';
+            appRenderAll();
         }
 
         function updateActiveCycle() {
@@ -466,14 +446,7 @@
             appRenderHistory();
         }
 
-        function appRenderAll() {
-            if (appState.config.requireLogin && sessionStorage.getItem('visit_v95_session') !== 'active') {
-                document.getElementById('login-overlay').style.display = 'flex';
-            } else {
-                document.getElementById('login-overlay').style.display = 'none';
-            }
-            document.getElementById('btn-logout').style.display = appState.config.requireLogin ? '' : 'none';
-
+        function appRenderAll(preventFirebaseSave = false) {
             appState.enrichedRecords = appState.records.map(r => ({
                 ...r,
                 ts: new Date(r.date).getTime(),
@@ -487,6 +460,15 @@
             appRenderHistory();
             localStorage.setItem('visit_v95_recs', JSON.stringify(appState.records));
             localStorage.setItem('visit_v95_cfg', JSON.stringify(appState.config));
+
+            // Firebaseへ保存（preventFirebaseSaveが指定されている場合は保存しない）
+            if (!preventFirebaseSave && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                getSyncDocRef().set({
+                    records: appState.records,
+                    config: appState.config,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(e => console.error("Firebase sync error", e));
+            }
         }
 
         function appRenderCycleSwitcher() {
@@ -662,104 +644,156 @@
             document.getElementById('ui-pref-fraction').textContent = `${displayedCount} / ${denom}`;
         }
 
-        let currentGeoJson = null;
-        let currentMapPref = null;
+        let globalGeojsonData = null;
+        let leafletMap = null;
+        let leafletGeoJsonLayer = null;
 
         function appOpenMapModal() {
             document.getElementById('modal-map').style.display = 'flex';
             document.getElementById('ui-map-modal-title').textContent = `${appState.currentViewPref} マップ`;
-            appRenderMap();
+            appRenderMap(false);
         }
 
-        async function appRenderMap() {
+        function appOpenNationalMapModal() {
+            document.getElementById('modal-map').style.display = 'flex';
+            document.getElementById('ui-map-modal-title').textContent = `全国 マップ`;
+            appRenderMap(true);
+        }
+
+        function getNormalizedPref(name) {
+            if (name === "神奈川") return "神奈川県";
+            if (name === "和歌山") return "和歌山県";
+            if (name === "鹿児島") return "鹿児島県";
+            return name || "";
+        }
+
+        async function appRenderMap(isNational = false) {
             const p = appState.currentViewPref;
             const ctn = document.getElementById('ui-map-container');
             if (!ctn || document.getElementById('modal-map').style.display === 'none') return;
-            const width = ctn.clientWidth;
-            const height = ctn.clientHeight;
             
             const loader = document.getElementById('ui-map-loading');
             
-            if (currentMapPref !== p) {
+            if (!globalGeojsonData) {
+                loader.textContent = "🗺️ 全1892市区町村の地図データを展開しています... (初回のみ)";
+                loader.className = "font-black text-indigo-500 text-[14px] animate-pulse absolute inset-0 flex items-center justify-center bg-white/90 z-20";
                 loader.style.display = 'flex';
-                d3.select("#ui-map-container svg").remove();
+                
                 try {
-                    const code = PREF_CODES[p];
-                    const url = `https://geoshape.ex.nii.ac.jp/city/topojson/20230101/${code}/${code}_city.topojson`;
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error("fetch failed");
-                    const topo = await res.json();
-                    
-                    const key = Object.keys(topo.objects)[0];
-                    currentGeoJson = topojson.feature(topo, topo.objects[key]);
-                    currentMapPref = p;
+                    // Access JS variable instead of fetch to avoid CORS on local file://
+                    if (!window.japanGeoJson) {
+                        throw new Error("japanGeoJson was not found in global window object");
+                    }
+                    globalGeojsonData = window.japanGeoJson;
                 } catch (e) {
                     console.error("Map Load Error", e);
-                    loader.style.display = 'none';
+                    loader.textContent = "⚠️ japan_map_data.js が正しく読み込まれていません。";
+                    loader.className = "font-black text-rose-500 text-xs absolute inset-0 flex items-center justify-center bg-white z-20 p-4 text-center";
                     return;
                 }
             }
             
             loader.style.display = 'none';
-            d3.select("#ui-map-container svg").remove();
             
-            const svg = d3.select("#ui-map-container").append("svg")
-                .attr("width", width)
-                .attr("height", height);
+            if (!leafletMap) {
+                leafletMap = L.map('ui-map-container', {
+                    zoomControl: true,
+                    minZoom: 5,
+                    maxZoom: 14
+                });
                 
-            const projection = d3.geoMercator().fitSize([width, height], currentGeoJson);
-            const path = d3.geoPath().projection(projection);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(leafletMap);
+            }
             
-            svg.append("g")
-               .selectAll("path")
-               .data(currentGeoJson.features)
-               .join("path")
-               .attr("d", path)
-               .attr("stroke", "#ffffff")
-               .attr("stroke-width", 0.5)
-               .attr("fill", d => {
-                   let cityName = d.properties.city_name || d.properties.name || "";
-                   let gunName = d.properties.gun_name || "";
-                   let fullName = gunName + cityName;
-                   
-                   const cityRecs = appState.enrichedRecords.filter(r => r.pref === p);
-                   // gunNameが含まれる場合と含まれない場合双方でマッチングを試行
-                   let matchedRec = cityRecs.find(r => r.city === fullName || r.city === cityName);
-                   
-                   // 過去分非表示状態の場合、最新ログがPASTであれば塗らない（グレーにする）
-                   if (matchedRec) {
-                       const rc = cityRecs.filter(r => r.city === fullName || r.city === cityName).sort((a,b)=>b.ts - a.ts);
-                       const latestInfo = rc[0].info;
-                       if (!appState.showPastCityGrid && latestInfo.label === "PAST") return "#f1f5f9"; // faint gray for hidden past
+            if (leafletGeoJsonLayer) {
+                leafletMap.removeLayer(leafletGeoJsonLayer);
+            }
+            
+            // Filter global geojson for the current selected prefecture (or all if national)
+            const prefFeatures = isNational ? globalGeojsonData.features : globalGeojsonData.features.filter(f => getNormalizedPref(f.properties.N03_001) === p);
+            
+            leafletGeoJsonLayer = L.geoJSON(prefFeatures, {
+                style: function (feature) {
+                    let featurePref = getNormalizedPref(feature.properties.N03_001);
+                    let cityName = feature.properties.N03_004 || feature.properties.city_name || feature.properties.name || "";
+                    let gunName = feature.properties.N03_003 || feature.properties.gun_name || "";
+                    if (gunName === null || gunName === "null") gunName = "";
+                    if (cityName === null || cityName === "null") cityName = "";
+                    let fullName = gunName + cityName;
+                    
+                    const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
+                    let matchedRec = cityRecs.find(r => r.city === fullName || r.city === cityName);
+                    
+                    let fillColor = "#f1f5f9"; // default unvisited
+                    let weight = 1;
+                    let color = "#cbd5e1"; // Muted border
+                    let opacity = 0.8;
 
-                       const l = latestInfo.label;
-                       if (l === "1ST YR") return "#ff2d55";
-                       if (l === "2ND YR") return "#ffcc00";
-                       if (l === "3RD YR") return "#00e676";
-                       if (l === "4TH YR") return "#00d4ff";
-                       if (l === "PAST") return "#cbd5e1";
-                   }
-                   return "#f1f5f9"; // default faint gray
-               })
-               .style("cursor", "pointer")
-               .style("transition", "opacity 0.2s")
-               .on("mouseover", function(e, d) {
-                   d3.select(this).attr("opacity", 0.7);
-                   let gunName = d.properties.gun_name || "";
-                   let cityName = d.properties.city_name || d.properties.name || "";
-                   const tt = document.getElementById('ui-map-tooltip');
-                   tt.style.display = "block";
-                   tt.innerHTML = gunName + cityName;
-               })
-               .on("mousemove", function(e) {
-                   const tt = document.getElementById('ui-map-tooltip');
-                   tt.style.left = (e.clientX + 15) + "px";
-                   tt.style.top = (e.clientY + 15) + "px";
-               })
-               .on("mouseout", function() {
-                   d3.select(this).attr("opacity", 1);
-                   document.getElementById('ui-map-tooltip').style.display = "none";
-               });
+                    if (matchedRec) {
+                        const rc = cityRecs.filter(r => r.city === fullName || r.city === cityName).sort((a,b)=>b.ts - a.ts);
+                        const latestInfo = rc[0].info;
+                        const l = latestInfo.label;
+                        
+                        if (l === "PAST") {
+                            if (!appState.showPastCityGrid) {
+                                fillColor = "#f1f5f9"; // Hidden past
+                                color = "#e2e8f0";
+                            } else {
+                                fillColor = "#cbd5e1";
+                            }
+                        } else if (l === "1ST YR") fillColor = "#ff2d55";
+                        else if (l === "2ND YR") fillColor = "#ffcc00";
+                        else if (l === "3RD YR") fillColor = "#00e676";
+                        else if (l === "4TH YR") fillColor = "#00d4ff";
+                        
+                        weight = 1.5;
+                        if(l !== "PAST" || appState.showPastCityGrid) {
+                            color = "#ffffff"; // clean boundaries for visited
+                            opacity = 0.9;
+                        }
+                    }
+                    
+                    return {
+                        fillColor: fillColor,
+                        weight: weight,
+                        color: color,
+                        fillOpacity: opacity
+                    };
+                },
+                onEachFeature: function (feature, layer) {
+                    let featurePref = getNormalizedPref(feature.properties.N03_001);
+                    let cityName = feature.properties.N03_004 || "";
+                    let gunName = feature.properties.N03_003 || "";
+                    if (gunName === null || gunName === "null") gunName = "";
+                    if (cityName === null || cityName === "null") cityName = "";
+                    let fullName = gunName + cityName;
+                    
+                    let tooltipContent = `<div class="font-sans font-black text-slate-800 text-[12px]">${featurePref} ${fullName}</div>`;
+                    
+                    const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
+                    let rc = cityRecs.filter(r => r.city === fullName || r.city === cityName).sort((a,b)=>b.ts - a.ts);
+                    
+                    if (rc.length > 0) {
+                        const latest = rc[0];
+                        const infoClass = latest.info.label === 'PAST' ? 'text-slate-400' : 'text-indigo-500';
+                        tooltipContent += `<div class="mt-1 text-[10px] font-bold ${infoClass}">訪問日: ${latest.date}</div>`;
+                    } else {
+                        tooltipContent += `<div class="mt-1 text-[10px] font-bold text-slate-400">未訪問</div>`;
+                    }
+                    
+                    layer.bindTooltip(tooltipContent, { permanent: false, direction: "top", opacity: 0.95 });
+                }
+            }).addTo(leafletMap);
+            
+            // Re-calc layout after modal display
+            setTimeout(() => {
+                leafletMap.invalidateSize();
+                if (prefFeatures.length > 0) {
+                    leafletMap.fitBounds(leafletGeoJsonLayer.getBounds(), { padding: [30, 30], animate: true });
+                }
+            }, 100);
         }
 
         function appRenderHistory() {
@@ -851,7 +885,6 @@
         function appOpenSettings() {
             document.getElementById('modal-settings').style.display = 'flex';
             document.getElementById('cfg-start').value = appState.config.baseStart;
-            document.getElementById('cfg-require-login').checked = appState.config.requireLogin;
             appState.editingCycle = appState.activeCycle;
             appRenderCfgGrid();
         }
@@ -895,7 +928,6 @@
 
         function appSaveSettings() {
             appState.config.baseStart = document.getElementById('cfg-start').value;
-            appState.config.requireLogin = document.getElementById('cfg-require-login').checked;
             document.getElementById('modal-settings').style.display = 'none';
             updateActiveCycle();
             appRenderAll();
