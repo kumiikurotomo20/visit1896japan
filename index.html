@@ -979,6 +979,7 @@
             
             leafletGeoJsonLayer = L.geoJSON(prefFeatures, {
                 style: function (feature) {
+                    let featurePref = getNormalizedPref(feature.properties.N03_001);
                     let cityName = (feature.properties.N03_004 || feature.properties.city_name || feature.properties.name || "").trim();
                     let gunName = (feature.properties.N03_003 || feature.properties.gun_name || "").trim();
                     if (gunName === null || gunName === "null") gunName = "";
