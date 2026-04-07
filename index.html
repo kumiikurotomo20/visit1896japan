@@ -108,7 +108,7 @@
             <div class="flex items-center gap-3">
                 <span class="text-3xl">🗾</span>
                 <h1 class="font-black text-xl tracking-tighter">市区町村訪問マスター <span
-                        class="text-xs text-indigo-500 ml-2">V9.5</span></h1>
+                        class="text-xs text-indigo-500 ml-2">1896cwtv</span></h1>
             </div>
             <div class="flex gap-2" id="header-cycle-switcher"></div>
             <div class="flex items-center gap-3">
@@ -255,19 +255,18 @@
                     class="text-slate-300 hover:text-slate-900 text-2xl">✕</button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div class="bg-slate-50 p-6 rounded-3xl">
                     <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">周期の基準開始日</label>
                     <input type="date" id="cfg-start" class="w-full bg-white border p-4 rounded-2xl font-bold outline-none">
                 </div>
-                <div class="bg-indigo-50/50 p-6 rounded-3xl flex flex-col justify-between">
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">統計周期の管理</label>
-                    <div class="flex items-center justify-between">
-                    <div id="cfg-cycle-switcher" class="flex gap-2 mb-3"></div>
+                <div class="bg-indigo-50/50 p-6 rounded-3xl flex flex-col gap-4">
+                    <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">統計周期の管理</label>
+                    <div id="cfg-cycle-switcher" class="flex flex-wrap gap-2"></div>
                     <button onclick="appConfigAddCycle()" class="w-full py-2 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl text-[9px] font-black transition-all">＋ 周期を追加</button>
                 </div>
-                <div class="bg-rose-50/30 p-6 rounded-3xl">
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">全市区町村 総分母</label>
+                <div class="bg-rose-50/30 p-6 rounded-3xl flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">全市区町村 総分母</label>
                     <input type="text" id="cfg-total-denominator" class="w-full bg-white border-2 border-rose-100 p-4 rounded-2xl font-black text-rose-500 outline-none text-xl" readonly value="0">
                 </div>
             </div>
