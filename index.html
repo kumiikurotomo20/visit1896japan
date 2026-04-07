@@ -180,7 +180,7 @@
             <div class="card p-8 min-h-[300px]">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
                     <div class="flex-1 w-full">
-                        <div class="flex items-center gap-4 mb-4">
+                        <div class="flex flex-wrap items-center gap-4 mb-4">
                             <h3 id="ui-current-pref-name" class="text-5xl font-black text-slate-800 tracking-tighter">訪問地</h3>
                             <button onclick="appTogglePastCity()" id="btn-toggle-past-upper"
                                 class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️ 過去分を隠す</button>
@@ -192,6 +192,15 @@
                                 class="px-4 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
                                 <span class="text-sm">🇯🇵</span> 全国マップ表示
                             </button>
+                            
+                            <!-- Legend -->
+                            <div class="flex items-center gap-3 ml-2 border-l pl-4 border-slate-200">
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#ff2d55]"></div><span class="text-[10px] font-bold text-slate-400">1ST</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#ffcc00]"></div><span class="text-[10px] font-bold text-slate-400">2ND</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#00e676]"></div><span class="text-[10px] font-bold text-slate-400">3RD</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#00d4ff]"></div><span class="text-[10px] font-bold text-slate-400">4TH</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#cbd5e1]"></div><span class="text-[10px] font-bold text-slate-400">PAST</span></div>
+                            </div>
                         </div>
                     </div>
                     <div class="text-right whitespace-nowrap mb-2">
@@ -205,8 +214,17 @@
 
             <div class="card p-8">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">Visit Log (Ascending)
-                    </h3>
+                    <div class="flex items-center gap-4">
+                        <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">Visit Log (Ascending)</h3>
+                        <!-- Legend -->
+                        <div class="flex items-center gap-3 border-l pl-4 border-slate-100">
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ff2d55]"></div><span class="text-[9px] font-bold text-slate-400">1ST</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ffcc00]"></div><span class="text-[9px] font-bold text-slate-400">2ND</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00e676]"></div><span class="text-[9px] font-bold text-slate-400">3RD</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00d4ff]"></div><span class="text-[9px] font-bold text-slate-400">4TH</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span class="text-[9px] font-bold text-slate-400">PAST</span></div>
+                        </div>
+                    </div>
                     <button onclick="appTogglePastHistory()" id="btn-toggle-past-lower"
                         class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️
                         過去分を隠す</button>
@@ -307,10 +325,19 @@
         class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
         style="display:none;">
         <div class="bg-white rounded-[40px] w-full max-w-5xl h-[85vh] p-8 flex flex-col shadow-2xl relative">
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h3 class="font-black text-2xl tracking-tighter italic flex items-center gap-3 text-slate-800">
                     <span class="text-3xl">🗺️</span>
                     <span id="ui-map-modal-title">東京都 マップ</span>
+                    
+                    <!-- Legend -->
+                    <div class="flex items-center gap-3 border-l pl-4 border-slate-200 ml-2">
+                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ff2d55]"></div><span class="text-[10px] font-bold text-slate-400">1ST</span></div>
+                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ffcc00]"></div><span class="text-[10px] font-bold text-slate-400">2ND</span></div>
+                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00e676]"></div><span class="text-[10px] font-bold text-slate-400">3RD</span></div>
+                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00d4ff]"></div><span class="text-[10px] font-bold text-slate-400">4TH</span></div>
+                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span class="text-[10px] font-bold text-slate-400">PAST</span></div>
+                    </div>
                 </h3>
                 <button onclick="document.getElementById('modal-map').style.display='none'"
                     class="text-slate-300 hover:text-rose-500 text-3xl font-black transition-colors px-2">✕</button>
