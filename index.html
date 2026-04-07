@@ -903,13 +903,13 @@
                         if (hasPast) {
                             rankStr = ""; // 重複訪問（過去訪問アリ）も表示しない
                         } else {
-                            // 新規訪問のみ表示。「その画面での順序 (全期間累計)」
-                            rankStr = `${hidePastCount++} (${rank})`;
+                            // 新規訪問のみ表示。「その画面での順序」
+                            rankStr = String(hidePastCount++);
                         }
                     }
                 } else {
                     // 「過去分を隠す」の時（現在周期のみ表示）
-                    rankStr = `${hidePastCount++} (${rank})`;
+                    rankStr = String(hidePastCount++);
                 }
 
                 const tr = document.createElement('tr');
@@ -936,10 +936,13 @@
                 return;
             }
 
-            // マッチする全記録を新しい順に表示
+            // 「都道府県順」→「訪問日が古い順」に表示
             const matches = appState.enrichedRecords.filter(c => 
                 c.city.includes(query) || c.pref.includes(query)
-            ).sort((a,b) => b.ts - a.ts).slice(0, 40);
+            ).sort((a,b) => {
+                if (a.pref !== b.pref) return a.pref.localeCompare(b.pref, 'ja');
+                return a.ts - b.ts;
+            }).slice(0, 50);
 
             if (matches.length === 0) {
                 resultsCtn.innerHTML = '<div class="p-6 text-xs font-bold text-slate-400 text-center">該当する市区町村が見つかりません</div>';
