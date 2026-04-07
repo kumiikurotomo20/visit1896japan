@@ -162,9 +162,44 @@
                             <p id="ui-cycle-countdown" class="text-[11px] font-black text-indigo-500 mt-1"></p>
                         </div>
                     </div>
-                    <span id="ui-stat-rate"
-                        class="text-7xl font-black italic tracking-tighter text-slate-900">0.00%</span>
-                    <div class="w-full bg-slate-100 h-4 rounded-full mt-6 overflow-hidden">
+                    <button onclick="appResetDenominator()"
+                        class="text-[10px] font-black text-rose-500 hover:text-rose-700 underline">分母をデフォルト(1741)に戻す</button>
+                
+                <!-- Merger Section -->
+                <div class="mt-8 pt-8 border-t border-slate-100">
+                    <h4 class="text-sm font-black text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="text-lg">🔄</span> 市区町村の合併・名称変更（この周期以降に適用）
+                    </h4>
+                    
+                    <div id="ui-merger-active-list" class="mb-6 space-y-2">
+                        <!-- 登録済みの統合設定 -->
+                    </div>
+
+                    <div class="bg-slate-50 p-5 rounded-2xl border-2 border-dashed border-slate-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">統合元 (旧：最大20件)</label>
+                                <div id="ui-merger-sources" class="space-y-2">
+                                    <div class="flex gap-2 merger-source-row">
+                                        <input type="text" placeholder="都道府県" class="m-pref px-3 py-2 rounded-lg border text-xs font-bold w-1/3">
+                                        <input type="text" placeholder="市区町村" class="m-city px-3 py-2 rounded-lg border text-xs font-bold flex-1">
+                                    </div>
+                                </div>
+                                <button onclick="appUIAddMergerRow()" class="mt-3 text-[10px] font-black text-indigo-500 hover:text-indigo-700 flex items-center gap-1">
+                                    <span>＋</span> 枠を増やす
+                                </button>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">統合後 (新名称)</label>
+                                <input id="ui-merger-target" type="text" placeholder="新市区町村名" class="w-full px-3 py-2 rounded-lg border text-xs font-bold mb-4">
+                                <button onclick="appUIExecuteMerger()" class="w-full py-2.5 bg-slate-800 hover:bg-black text-white text-[11px] font-black rounded-xl transition-all shadow-md active:scale-95">合併・改称を実行</button>
+                                <p class="mt-3 text-[9px] font-bold text-slate-400 leading-relaxed">
+                                    ※ 実行すると、対象の市区町村はこの周期以降「一つの場所」として統合され、過去の訪問記録は新名称に引き継がれます。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>    <div class="w-full bg-slate-100 h-4 rounded-full mt-6 overflow-hidden">
                         <div id="ui-stat-progress" class="bg-indigo-500 h-full transition-all duration-1000"></div>
                     </div>
                 </div>
@@ -380,6 +415,7 @@
                 baseStart: '2022-04-01',
                 prefDenominators: [{ ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }, { ...DEFAULT_PREF_DATA }]
             },
+            mergers: [],
             activeCycle: 0,
             currentViewPref: "東京都",
             showPastCityGrid: true,
@@ -390,6 +426,7 @@
         function appInit() {
             const rLocal = localStorage.getItem('visit_v95_recs');
             const cLocal = localStorage.getItem('visit_v95_cfg');
+            const mLocal = localStorage.getItem('visit_v95_mergers');
             if (rLocal) appState.records = JSON.parse(rLocal);
             if (cLocal) {
                 let parsedCfg = JSON.parse(cLocal);
@@ -399,6 +436,7 @@
                 }
                 appState.config = parsedCfg;
             }
+            if (mLocal) appState.mergers = JSON.parse(mLocal);
 
             PREFS.forEach(p => {
                 const o = document.createElement('option');
@@ -411,7 +449,6 @@
             // Firebaseリアルタイム同期のリスナー設定
             if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
                 getSyncDocRef().onSnapshot({ includeMetadataChanges: true }, (doc) => {
-                    // 自端末からの更新(hasPendingWrites)は反映済みのため無視する
                     if (doc.metadata.hasPendingWrites) return;
 
                     if (doc.exists) {
@@ -425,13 +462,9 @@
                             appState.config = data.config;
                             needsRender = true;
                         }
-                        // リモートからの変更があれば描画し、再度保存しないように防ぐ
                         if (needsRender) {
                             appRenderAll(true);
                         }
-                    } else if (appState.records.length > 0) {
-                        // リモートが空でローカルにデータがあればリモートを初期化
-                        appRenderAll(false);
                     }
                 });
             }
@@ -485,25 +518,45 @@
         }
 
         function appRenderAll(preventFirebaseSave = false) {
-            // Calculate unique rank (Across all history)
-            const allSorted = [...appState.records].sort((a,b) => {
-                const da = new Date(a.date).getTime();
-                const db = new Date(b.date).getTime();
-                return da !== db ? da - db : a.id - b.id;
+            // 統合データの解決 (RecordNormalization)
+            const resolvedRecords = appState.records.map(r => {
+                const targetDate = new Date(r.date);
+                const base = new Date(appState.config.baseStart);
+                let diff = (targetDate.getFullYear() - base.getFullYear()) * 12 + (targetDate.getMonth() - base.getMonth());
+                if (targetDate.getDate() < base.getDate()) diff--;
+                const cycleAtRecord = Math.max(0, Math.floor(Math.floor(diff / 12) / 4));
+
+                // この記録が作成された時点で有効な統合設定を探す
+                const activeMergers = appState.mergers.filter(m => cycleAtRecord >= m.effectiveCycle);
+                let currentCity = r.city;
+                for(const m of activeMergers) {
+                    if (m.sources.some(s => s.pref === r.pref && s.city === r.city)) {
+                        currentCity = m.targetCity;
+                        break;
+                    }
+                }
+                return { ...r, pref: r.pref, city: currentCity, ts: targetDate.getTime(), cycleAtRecord };
             });
+
+            // 統合後の名称単位で全期間の順序を計算
+            const allSorted = [...resolvedRecords].sort((a,b) => {
+                const d = a.ts - b.ts;
+                return d !== 0 ? d : a.id - b.id;
+            });
+
             const rankMap = {};
-            let currentRank = 1;
+            let globalRank = 1;
             allSorted.forEach(r => {
                 const key = `${r.pref}-${r.city}`;
                 if (!(key in rankMap)) {
-                    rankMap[key] = currentRank++;
+                    rankMap[key] = globalRank++;
                 }
             });
             appState.rankMap = rankMap;
 
-            appState.enrichedRecords = appState.records.map(r => ({
+            // 各レコードに現在の周期に基づいた情報を付与
+            appState.enrichedRecords = resolvedRecords.map(r => ({
                 ...r,
-                ts: new Date(r.date).getTime(),
                 info: getYearInfo(r.date)
             }));
             
@@ -512,10 +565,12 @@
             appRenderPrefList();
             appRenderCityGrid();
             appRenderHistory();
+            appUpdateMergerUI(); // 設定画面のリスト更新
+            
             localStorage.setItem('visit_v95_recs', JSON.stringify(appState.records));
             localStorage.setItem('visit_v95_cfg', JSON.stringify(appState.config));
+            localStorage.setItem('visit_v95_mergers', JSON.stringify(appState.mergers));
 
-            // Firebaseへ保存（preventFirebaseSaveが指定されている場合は保存しない）
             if (!preventFirebaseSave && firebaseConfig.apiKey !== "YOUR_API_KEY") {
                 getSyncDocRef().set({
                     records: appState.records,
@@ -523,6 +578,72 @@
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }).catch(e => console.error("Firebase sync error", e));
             }
+        }
+
+        function appUpdateMergerUI() {
+            const list = document.getElementById('ui-merger-active-list');
+            if(!list) return;
+            list.innerHTML = appState.mergers.map(m => `
+                <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                    <div>
+                        <span class="text-[9px] font-black px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-md mr-2">第${m.effectiveCycle+1}周期〜</span>
+                        <span class="text-[10px] font-bold text-slate-600">${m.sources.map(s => s.city).join(', ')}</span>
+                        <span class="mx-2 text-slate-300">→</span>
+                        <span class="text-[11px] font-black text-slate-800">${m.targetCity}</span>
+                    </div>
+                    <button onclick="appDeleteMerger(${m.id})" class="text-slate-300 hover:text-rose-500 transition-colors">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function appUIAddMergerRow() {
+            const container = document.getElementById('ui-merger-sources');
+            if (container.children.length >= 20) return;
+            const div = document.createElement('div');
+            div.className = "flex gap-2 merger-source-row";
+            div.innerHTML = `
+                <input type="text" placeholder="都道府県" class="m-pref px-3 py-2 rounded-lg border text-xs font-bold w-1/3">
+                <input type="text" placeholder="市区町村" class="m-city px-3 py-2 rounded-lg border text-xs font-bold flex-1">
+            `;
+            container.appendChild(div);
+        }
+
+        function appUIExecuteMerger() {
+            const target = document.getElementById('ui-merger-target').value.trim();
+            if(!target) return alert("新市区町村名を入力してください");
+            
+            const rows = document.querySelectorAll('.merger-source-row');
+            const sources = [];
+            rows.forEach(row => {
+                const p = row.querySelector('.m-pref').value.trim();
+                const c = row.querySelector('.m-city').value.trim();
+                if(p && c) sources.push({pref: p, city: c});
+            });
+
+            if(sources.length === 0) return alert("統合元を1つ以上入力してください");
+
+            const merger = {
+                id: Date.now(),
+                sources: sources,
+                targetCity: target,
+                effectiveCycle: appState.activeCycle
+            };
+
+            appState.mergers.push(merger);
+            // 入力リセット
+            document.getElementById('ui-merger-target').value = '';
+            document.getElementById('ui-merger-sources').innerHTML = `
+                <div class="flex gap-2 merger-source-row">
+                    <input type="text" placeholder="都道府県" class="m-pref px-3 py-2 rounded-lg border text-xs font-bold w-1/3">
+                    <input type="text" placeholder="市区町村" class="m-city px-3 py-2 rounded-lg border text-xs font-bold flex-1">
+                </div>
+            `;
+            appRenderAll();
+        }
+
+        function appDeleteMerger(id) {
+            appState.mergers = appState.mergers.filter(m => m.id !== id);
+            appRenderAll();
         }
 
         function appRenderCycleSwitcher() {
@@ -591,7 +712,6 @@
             info.textContent = "";
             if (!p || !c) return;
             const match = appState.records.find(r => r.pref === p && r.city === c);
-            // 「過去訪問アリ 年月日」を復活
             if (match) info.textContent = `過去訪問アリ：${match.date}`;
         }
 
@@ -734,7 +854,6 @@
                 loader.style.display = 'flex';
                 
                 try {
-                    // Access JS variable instead of fetch to avoid CORS on local file://
                     if (!window.japanGeoJson) {
                         throw new Error("japanGeoJson was not found in global window object");
                     }
@@ -765,7 +884,6 @@
                 leafletMap.removeLayer(leafletGeoJsonLayer);
             }
             
-            // Filter global geojson for the current selected prefecture (or all if national)
             const prefFeatures = isNational ? globalGeojsonData.features : globalGeojsonData.features.filter(f => getNormalizedPref(f.properties.N03_001) === p);
             
             leafletGeoJsonLayer = L.geoJSON(prefFeatures, {
@@ -777,22 +895,31 @@
                     if (cityName === null || cityName === "null") cityName = "";
                     let fullName = gunName + cityName;
                     
-                    const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
-                    let matchedRec = cityRecs.find(r => r.city === fullName || r.city === cityName);
+                    // 統合ロジックの適用
+                    const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
+                    for(const m of activeMergers) {
+                        if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName))) {
+                            fullName = m.targetCity;
+                            break;
+                        }
+                    }
                     
-                    let fillColor = "#f1f5f9"; // default unvisited
+                    const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
+                    let matchedRec = cityRecs.find(r => r.city === fullName);
+                    
+                    let fillColor = "#f1f5f9";
                     let weight = 1;
-                    let color = "#cbd5e1"; // Muted border
+                    let color = "#cbd5e1";
                     let opacity = 0.8;
 
                     if (matchedRec) {
-                        const rc = cityRecs.filter(r => r.city === fullName || r.city === cityName).sort((a,b)=>b.ts - a.ts);
+                        const rc = cityRecs.filter(r => r.city === fullName).sort((a,b)=>b.ts - a.ts);
                         const latestInfo = rc[0].info;
                         const l = latestInfo.label;
                         
                         if (l === "PAST") {
                             if (!appState.showPastCityGrid) {
-                                fillColor = "#f1f5f9"; // Hidden past
+                                fillColor = "#f1f5f9";
                                 color = "#e2e8f0";
                             } else {
                                 fillColor = "#cbd5e1";
@@ -804,7 +931,7 @@
                         
                         weight = 1.5;
                         if(l !== "PAST" || appState.showPastCityGrid) {
-                            color = "#ffffff"; // clean boundaries for visited
+                            color = "#ffffff";
                             opacity = 0.9;
                         }
                     }
@@ -824,10 +951,18 @@
                     if (cityName === null || cityName === "null") cityName = "";
                     let fullName = gunName + cityName;
                     
+                    const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
+                    for(const m of activeMergers) {
+                        if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName))) {
+                            fullName = m.targetCity;
+                            break;
+                        }
+                    }
+                    
                     let tooltipContent = `<div class="font-sans font-black text-slate-800 text-[12px]">${featurePref} ${fullName}</div>`;
                     
                     const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
-                    let rc = cityRecs.filter(r => r.city === fullName || r.city === cityName).sort((a,b)=>b.ts - a.ts);
+                    let rc = cityRecs.filter(r => r.city === fullName).sort((a,b)=>b.ts - a.ts);
                     
                     if (rc.length > 0) {
                         const latest = rc[0];
