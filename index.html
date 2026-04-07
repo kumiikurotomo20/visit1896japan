@@ -161,6 +161,7 @@
                             <p id="ui-cycle-countdown" class="text-[11px] font-black text-indigo-500 mt-1"></p>
                         </div>
                     </div>
+                    <span id="ui-stat-rate" class="text-7xl font-black italic tracking-tighter text-slate-900">0.00%</span>
                     <div class="w-full bg-slate-100 h-4 rounded-full mt-6 overflow-hidden">
                         <div id="ui-stat-progress" class="bg-indigo-500 h-full transition-all duration-1000"></div>
                     </div>
@@ -761,14 +762,25 @@
 
             document.getElementById('ui-cycle-period').textContent = `${fmt(cycleStart)} 〜 ${fmt(cycleEnd)}`;
             const cdEl = document.getElementById('ui-cycle-countdown');
-            cdEl.textContent = cdText;
-            cdEl.className = `text-[11px] font-black mt-1 ${cdColor}`;
+            if(cdEl) {
+                cdEl.textContent = cdText;
+                cdEl.className = `text-[11px] font-black mt-1 ${cdColor}`;
+            }
 
-            document.getElementById('ui-stat-rate').textContent = `${rate.toFixed(2)}%`;
-            document.getElementById('ui-stat-progress').style.width = `${Math.min(rate, 100)}%`;
-            document.getElementById('ui-unique-count').textContent = allTimeUnique;
-            document.getElementById('ui-disp-cycle').textContent = appState.activeCycle + 1;
-            document.getElementById('ui-total-denom').textContent = `/ ${totalDenom}`;
+            const rateEl = document.getElementById('ui-stat-rate');
+            if(rateEl) rateEl.textContent = `${rate.toFixed(2)}%`;
+            
+            const progressEl = document.getElementById('ui-stat-progress');
+            if(progressEl) progressEl.style.width = `${Math.min(rate, 100)}%`;
+            
+            const uniqueEl = document.getElementById('ui-unique-count');
+            if(uniqueEl) uniqueEl.textContent = allTimeUnique;
+            
+            const dispCycleEl = document.getElementById('ui-disp-cycle');
+            if(dispCycleEl) dispCycleEl.textContent = appState.activeCycle + 1;
+            
+            const totalDenomEl = document.getElementById('ui-total-denom');
+            if(totalDenomEl) totalDenomEl.textContent = `/ ${totalDenom}`;
         }
 
         function appCheckDuplicate() {
