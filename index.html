@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>市区町村訪問マスター V9.5 (Custom Denominator)</title>
+    <title>市区町村訪問マスター 1896cwtv</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet Configuration -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -101,7 +101,9 @@
 </head>
 
 <body class="min-h-screen pb-12">
-    <div id="ui-map-tooltip" class="fixed hidden bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-2xl pointer-events-none z-[100]"></div>
+    <div id="ui-map-tooltip"
+        class="fixed hidden bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-2xl pointer-events-none z-[100]">
+    </div>
 
     <header class="bg-white border-b sticky top-0 z-40">
         <div class="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
@@ -113,7 +115,7 @@
             <div class="flex gap-2" id="header-cycle-switcher"></div>
             <div class="flex items-center gap-3">
                 <button onclick="appOpenSettings()"
-                    class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all">⚙️ 周期・分母設定</button>
+                    class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all">⚙️設定</button>
             </div>
         </div>
     </header>
@@ -122,18 +124,20 @@
         <div class="lg:col-span-3 space-y-6">
             <!-- Search / Inquiry Card -->
             <div class="card p-6 border-b-8 border-emerald-400">
-                <h3 class="font-black text-[10px] mb-4 text-slate-400 tracking-widest uppercase">City Search / Inquiry</h3>
+                <h3 class="font-black text-[10px] mb-4 text-slate-400 tracking-widest uppercase">市区町村照会 検索</h3>
                 <div class="relative">
                     <input type="text" id="ui-search-input" oninput="appSearchCity()" placeholder="市区町村を検索..."
                         class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20">
-                    <div id="ui-search-results" class="absolute left-0 right-0 mt-2 bg-white border rounded-[24px] shadow-2xl z-50 max-h-[400px] overflow-y-auto hidden scroll-hide divide-y divide-slate-50"></div>
+                    <div id="ui-search-results"
+                        class="absolute left-0 right-0 mt-2 bg-white border rounded-[24px] shadow-2xl z-50 max-h-[400px] overflow-y-auto hidden scroll-hide divide-y divide-slate-50">
+                    </div>
                 </div>
             </div>
 
             <div class="card p-6 border-b-8 border-indigo-600">
-                <h3 class="font-black text-[10px] mb-6 text-slate-400 tracking-widest uppercase">Record Entry</h3>
+                <h3 class="font-black text-[10px] mb-6 text-slate-400 tracking-widest uppercase">新規訪問市区町村の登録はココ！</h3>
                 <div class="space-y-4">
-                    <input list="pref-options" id="form-pref" placeholder="都道府県"
+                    <input list="pref-options" id="form-pref" placeholder="都道府県名"
                         class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20">
                     <datalist id="pref-options"></datalist>
                     <input type="text" id="form-city" oninput="appCheckDuplicate()" placeholder="市区町村名"
@@ -157,11 +161,13 @@
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">■ 第<span
                                 id="ui-disp-cycle">1</span>周期 達成状況</p>
                         <div class="text-right">
-                            <p id="ui-cycle-period" class="text-[10px] font-bold text-slate-400">----/--/-- 〜 ----/--/--</p>
+                            <p id="ui-cycle-period" class="text-[10px] font-bold text-slate-400">----/--/-- 〜 ----/--/--
+                            </p>
                             <p id="ui-cycle-countdown" class="text-[11px] font-black text-indigo-500 mt-1"></p>
                         </div>
                     </div>
-                    <span id="ui-stat-rate" class="text-7xl font-black italic tracking-tighter text-slate-900">0.00%</span>
+                    <span id="ui-stat-rate"
+                        class="text-7xl font-black italic tracking-tighter text-slate-900">0.00%</span>
                     <div class="w-full bg-slate-100 h-4 rounded-full mt-6 overflow-hidden">
                         <div id="ui-stat-progress" class="bg-indigo-500 h-full transition-all duration-1000"></div>
                     </div>
@@ -176,28 +182,46 @@
             </div>
 
             <div class="card p-8 min-h-[300px]">
-                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
+                <div
+                    class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
                     <div class="flex-1 w-full">
                         <div class="flex flex-wrap items-center gap-4 mb-4">
-                            <h3 id="ui-current-pref-name" class="text-5xl font-black text-slate-800 tracking-tighter">訪問地</h3>
+                            <h3 id="ui-current-pref-name" class="text-5xl font-black text-slate-800 tracking-tighter">
+                                訪問地</h3>
                             <button onclick="appTogglePastCity()" id="btn-toggle-past-upper"
-                                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️ 過去分を隠す</button>
+                                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️
+                                過去分を隠す</button>
                             <button onclick="appOpenMapModal()"
                                 class="px-4 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
                                 <span class="text-sm">🗺️</span> マップ表示
                             </button>
                             <button onclick="appOpenNationalMapModal()"
                                 class="px-4 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
-                                <span class="text-sm">🇯🇵</span> 全国マップ表示
+                                <span class="text-sm">🗾</span> 全国マップ表示
                             </button>
-                            
+
                             <!-- Legend -->
                             <div class="flex items-center gap-3 ml-2 border-l pl-4 border-slate-200">
-                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#ff2d55]"></div><span class="text-[10px] font-bold text-slate-400">1ST</span></div>
-                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#ffcc00]"></div><span class="text-[10px] font-bold text-slate-400">2ND</span></div>
-                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#00e676]"></div><span class="text-[10px] font-bold text-slate-400">3RD</span></div>
-                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#00d4ff]"></div><span class="text-[10px] font-bold text-slate-400">4TH</span></div>
-                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#cbd5e1]"></div><span class="text-[10px] font-bold text-slate-400">PAST</span></div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-[#ff2d55]"></div><span
+                                        class="text-[10px] font-bold text-slate-400">1ST</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-[#ffcc00]"></div><span
+                                        class="text-[10px] font-bold text-slate-400">2ND</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-[#00e676]"></div><span
+                                        class="text-[10px] font-bold text-slate-400">3RD</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-[#00d4ff]"></div><span
+                                        class="text-[10px] font-bold text-slate-400">4TH</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-[#cbd5e1]"></div><span
+                                        class="text-[10px] font-bold text-slate-400">PAST</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -213,14 +237,29 @@
             <div class="card p-8">
                 <div class="flex justify-between items-center mb-6">
                     <div class="flex items-center gap-4">
-                        <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">Visit Log (Ascending)</h3>
+                        <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">訪問履歴</h3>
                         <!-- Legend -->
                         <div class="flex items-center gap-3 border-l pl-4 border-slate-100">
-                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ff2d55]"></div><span class="text-[9px] font-bold text-slate-400">1ST</span></div>
-                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ffcc00]"></div><span class="text-[9px] font-bold text-slate-400">2ND</span></div>
-                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00e676]"></div><span class="text-[9px] font-bold text-slate-400">3RD</span></div>
-                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00d4ff]"></div><span class="text-[9px] font-bold text-slate-400">4TH</span></div>
-                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span class="text-[9px] font-bold text-slate-400">PAST</span></div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-full bg-[#ff2d55]"></div><span
+                                    class="text-[9px] font-bold text-slate-400">1ST</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-full bg-[#ffcc00]"></div><span
+                                    class="text-[9px] font-bold text-slate-400">2ND</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-full bg-[#00e676]"></div><span
+                                    class="text-[9px] font-bold text-slate-400">3RD</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-full bg-[#00d4ff]"></div><span
+                                    class="text-[9px] font-bold text-slate-400">4TH</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span
+                                    class="text-[9px] font-bold text-slate-400">PAST</span>
+                            </div>
                         </div>
                     </div>
                     <button onclick="appTogglePastHistory()" id="btn-toggle-past-lower"
@@ -257,22 +296,31 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div class="bg-slate-50 p-6 rounded-3xl">
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">周期の基準開始日</label>
-                    <input type="date" id="cfg-start" class="w-full bg-white border p-4 rounded-2xl font-bold outline-none">
+                    <label
+                        class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">周期の基準開始日</label>
+                    <input type="date" id="cfg-start"
+                        class="w-full bg-white border p-4 rounded-2xl font-bold outline-none">
                 </div>
                 <div class="bg-indigo-50/50 p-6 rounded-3xl flex flex-col gap-4">
-                    <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">統計周期の管理</label>
+                    <label
+                        class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">統計周期の管理</label>
                     <div id="cfg-cycle-switcher" class="flex flex-wrap gap-2"></div>
-                    <button onclick="appConfigAddCycle()" class="w-full py-2 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl text-[9px] font-black transition-all">＋ 周期を追加</button>
+                    <button onclick="appConfigAddCycle()"
+                        class="w-full py-2 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl text-[9px] font-black transition-all">＋
+                        周期を追加</button>
                 </div>
                 <div class="bg-rose-50/30 p-6 rounded-3xl flex flex-col gap-2">
-                    <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">全市区町村 総分母</label>
-                    <input type="text" id="cfg-total-denominator" class="w-full bg-white border-2 border-rose-100 p-4 rounded-2xl font-black text-rose-500 outline-none text-xl" readonly value="0">
+                    <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">全市区町村
+                        総分母</label>
+                    <input type="text" id="cfg-total-denominator"
+                        class="w-full bg-white border-2 border-rose-100 p-4 rounded-2xl font-black text-rose-500 outline-none text-xl"
+                        readonly value="0">
                 </div>
             </div>
 
             <div class="flex-1 overflow-y-auto pr-4 scroll-hide">
-                <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-6">▼ 都道府県別の詳細分母（書き換えると総分母に反映されます）</p>
+                <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-6">▼
+                    都道府県別の詳細分母（書き換えると総分母に反映されます）</p>
                 <div id="cfg-pref-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-14"></div>
 
                 <!-- Merger Section -->
@@ -280,28 +328,37 @@
                     <h4 class="text-lg font-black text-slate-800 mb-6 flex items-center gap-3">
                         <span class="text-2xl">🔄</span> 市区町村の合併・名称変更
                     </h4>
-                    
+
                     <div id="ui-merger-active-list" class="mb-8 space-y-2"></div>
 
                     <div class="bg-indigo-50/30 p-8 rounded-[32px] border-2 border-dashed border-indigo-100">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">■ 統合元 (旧市区町村を指定)</label>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">■ 統合元
+                            (旧市区町村を指定)</label>
                         <div id="ui-merger-sources" class="space-y-3 mb-6">
                             <div class="flex gap-3 merger-source-row group items-center">
-                                <input type="text" placeholder="例: 静岡県" class="m-pref px-4 py-3 rounded-xl border-2 border-white bg-white focus:border-indigo-500 outline-none text-sm font-bold w-1/4 shadow-sm transition-all">
-                                <input type="text" placeholder="例: 浜松市西区" class="m-city px-4 py-3 rounded-xl border-2 border-white bg-white focus:border-indigo-500 outline-none text-sm font-bold flex-1 shadow-sm transition-all">
-                                <button onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-500 transition-colors px-2 opacity-0 group-hover:opacity-100">✕</button>
+                                <input type="text" placeholder="例: 静岡県"
+                                    class="m-pref px-4 py-3 rounded-xl border-2 border-white bg-white focus:border-indigo-500 outline-none text-sm font-bold w-1/4 shadow-sm transition-all">
+                                <input type="text" placeholder="例: 浜松市西区"
+                                    class="m-city px-4 py-3 rounded-xl border-2 border-white bg-white focus:border-indigo-500 outline-none text-sm font-bold flex-1 shadow-sm transition-all">
+                                <button onclick="this.parentElement.remove()"
+                                    class="text-slate-300 hover:text-rose-500 transition-colors px-2 opacity-0 group-hover:opacity-100">✕</button>
                             </div>
                         </div>
-                        <button onclick="appUIAddMergerRow()" class="mt-4 text-[10px] font-black text-indigo-500 hover:text-indigo-700 flex items-center gap-1.5 bg-white px-4 py-2 rounded-xl shadow-sm border border-indigo-50 hover:border-indigo-200 transition-all mb-10">
+                        <button onclick="appUIAddMergerRow()"
+                            class="mt-4 text-[10px] font-black text-indigo-500 hover:text-indigo-700 flex items-center gap-1.5 bg-white px-4 py-2 rounded-xl shadow-sm border border-indigo-50 hover:border-indigo-200 transition-all mb-10">
                             <span>＋</span> 枠を増やす
                         </button>
 
                         <div class="pt-6 border-t border-indigo-100/50">
-                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">■ 統合後 (新名称)</label>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">■
+                                統合後 (新名称)</label>
                             <div class="flex flex-col sm:flex-row gap-4 items-center">
-                                <div class="text-[11px] font-bold text-slate-400 px-2 italic w-1/4 text-center">新しい名前</div>
-                                <input id="ui-merger-target" type="text" placeholder="例: 浜松市中央区" class="flex-1 px-4 py-3 rounded-xl border-2 border-slate-900/5 bg-white focus:border-indigo-500 outline-none text-sm font-black shadow-sm transition-all">
-                                <button onclick="appUIExecuteMerger()" class="px-10 py-3 bg-slate-900 hover:bg-black text-white text-xs font-black rounded-xl transition-all shadow-lg active:scale-95">合併・改称を実行</button>
+                                <div class="text-[11px] font-bold text-slate-400 px-2 italic w-1/4 text-center">新しい名前
+                                </div>
+                                <input id="ui-merger-target" type="text" placeholder="例: 浜松市中央区"
+                                    class="flex-1 px-4 py-3 rounded-xl border-2 border-slate-900/5 bg-white focus:border-indigo-500 outline-none text-sm font-black shadow-sm transition-all">
+                                <button onclick="appUIExecuteMerger()"
+                                    class="px-10 py-3 bg-slate-900 hover:bg-black text-white text-xs font-black rounded-xl transition-all shadow-lg active:scale-95">合併・改称を実行</button>
                             </div>
                         </div>
                     </div>
@@ -309,13 +366,6 @@
             </div>
 
             <div class="pt-8 flex justify-end gap-4 border-t border-slate-100">
-                <button onclick="appSaveSettings()"
-                    class="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black shadow-2xl active:scale-95 transition-all">設定を保存して反映</button>
-            </div>
-        </div>
-    </div>
-
-            <div class="pt-8 flex justify-end gap-4">
                 <button onclick="appSaveSettings()"
                     class="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black shadow-2xl active:scale-95 transition-all">設定を保存して反映</button>
             </div>
@@ -365,22 +415,40 @@
                 <h3 class="font-black text-2xl tracking-tighter italic flex items-center gap-3 text-slate-800">
                     <span class="text-3xl">🗺️</span>
                     <span id="ui-map-modal-title">東京都 マップ</span>
-                    
+
                     <!-- Legend -->
                     <div class="flex items-center gap-3 border-l pl-4 border-slate-200 ml-2">
-                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ff2d55]"></div><span class="text-[10px] font-bold text-slate-400">1ST</span></div>
-                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ffcc00]"></div><span class="text-[10px] font-bold text-slate-400">2ND</span></div>
-                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00e676]"></div><span class="text-[10px] font-bold text-slate-400">3RD</span></div>
-                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00d4ff]"></div><span class="text-[10px] font-bold text-slate-400">4TH</span></div>
-                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span class="text-[10px] font-bold text-slate-400">PAST</span></div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2 h-2 rounded-full bg-[#ff2d55]"></div><span
+                                class="text-[10px] font-bold text-slate-400">1ST</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2 h-2 rounded-full bg-[#ffcc00]"></div><span
+                                class="text-[10px] font-bold text-slate-400">2ND</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2 h-2 rounded-full bg-[#00e676]"></div><span
+                                class="text-[10px] font-bold text-slate-400">3RD</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2 h-2 rounded-full bg-[#00d4ff]"></div><span
+                                class="text-[10px] font-bold text-slate-400">4TH</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span
+                                class="text-[10px] font-bold text-slate-400">PAST</span>
+                        </div>
                     </div>
                 </h3>
                 <button onclick="document.getElementById('modal-map').style.display='none'"
                     class="text-slate-300 hover:text-rose-500 text-3xl font-black transition-colors px-2">✕</button>
             </div>
-            
-            <div id="ui-map-container" class="flex-1 w-full bg-white rounded-[32px] border-2 border-slate-100 relative overflow-hidden flex items-center justify-center z-10">
-                <div id="ui-map-loading" class="font-bold text-slate-400 text-[11px] animate-pulse absolute inset-0 flex items-center justify-center bg-slate-50 z-20" style="display:none;">地図データを取得中...</div>
+
+            <div id="ui-map-container"
+                class="flex-1 w-full bg-white rounded-[32px] border-2 border-slate-100 relative overflow-hidden flex items-center justify-center z-10">
+                <div id="ui-map-loading"
+                    class="font-bold text-slate-400 text-[11px] animate-pulse absolute inset-0 flex items-center justify-center bg-slate-50 z-20"
+                    style="display:none;">地図データを取得中...</div>
             </div>
         </div>
     </div>
@@ -427,7 +495,7 @@
         function appConfigAddCycle() {
             const newIdx = appState.config.prefDenominators.length;
             const last = appState.config.prefDenominators[newIdx - 1] || DEFAULT_PREF_DATA;
-            appState.config.prefDenominators.push({...last});
+            appState.config.prefDenominators.push({ ...last });
             appOpenSettings(); // 再描画
         }
 
@@ -452,7 +520,7 @@
                             if (parsed.config) loadedCfg = parsed.config;
                             if (parsed.mergers) loadedMergers = parsed.mergers;
                         }
-                    } catch(e) {}
+                    } catch (e) { }
                 }
             }
 
@@ -501,21 +569,21 @@
                     if (doc.exists) {
                         const data = doc.data();
                         let needsRender = false;
-                        
+
                         // 【重要】リモートにある記録がローカルより極端に少ない（または空）の場合は、
                         // 上書きせずにローカルのデータをリモートに共有する
                         if (data.records && Array.isArray(data.records)) {
-                             if (data.records.length < appState.records.length && data.records.length === 0) {
-                                 // クラウドが空なので、ローカルの記録をクラウドに送り込む
-                                 appRenderAll(false); 
-                                 return;
-                             }
-                             if (JSON.stringify(appState.records) !== JSON.stringify(data.records)) {
-                                 appState.records = data.records;
-                                 needsRender = true;
-                             }
+                            if (data.records.length < appState.records.length && data.records.length === 0) {
+                                // クラウドが空なので、ローカルの記録をクラウドに送り込む
+                                appRenderAll(false);
+                                return;
+                            }
+                            if (JSON.stringify(appState.records) !== JSON.stringify(data.records)) {
+                                appState.records = data.records;
+                                needsRender = true;
+                            }
                         }
-                        
+
                         if (data.config && JSON.stringify(appState.config) !== JSON.stringify(data.config)) {
                             appState.config = data.config;
                             needsRender = true;
@@ -524,7 +592,7 @@
                             appState.mergers = data.mergers;
                             needsRender = true;
                         }
-                        
+
                         if (needsRender) {
                             appRenderAll(true);
                         }
@@ -592,7 +660,7 @@
             // 全レコードを「現在の周期の視点」で統合後の名前に読み替える
             const normalizedRecords = appState.records.map(r => {
                 let currentCity = r.city;
-                for(const m of activeMergers) {
+                for (const m of activeMergers) {
                     if (m.sources.some(s => s.pref === r.pref && s.city === r.city)) {
                         currentCity = m.targetCity;
                         break;
@@ -603,7 +671,7 @@
             });
 
             // 統合後の名称単位で全期間の順序を計算
-            const allSorted = [...normalizedRecords].sort((a,b) => {
+            const allSorted = [...normalizedRecords].sort((a, b) => {
                 const d = a.ts - b.ts;
                 return d !== 0 ? d : a.id - b.id;
             });
@@ -623,14 +691,14 @@
                 ...r,
                 info: getYearInfo(r.date)
             }));
-            
+
             appRenderCycleSwitcher();
             appRenderStats();
             appRenderPrefList();
             appRenderCityGrid();
             appRenderHistory();
             appUpdateMergerUI(); // 設定画面のリスト更新
-            
+
             localStorage.setItem('visit_v95_recs', JSON.stringify(appState.records));
             localStorage.setItem('visit_v95_cfg', JSON.stringify(appState.config));
             localStorage.setItem('visit_v95_mergers', JSON.stringify(appState.mergers));
@@ -647,11 +715,11 @@
 
         function appUpdateMergerUI() {
             const list = document.getElementById('ui-merger-active-list');
-            if(!list) return;
+            if (!list) return;
             list.innerHTML = appState.mergers.map(m => `
                 <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
                     <div>
-                        <span class="text-[9px] font-black px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-md mr-2">第${m.effectiveCycle+1}周期〜</span>
+                        <span class="text-[9px] font-black px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-md mr-2">第${m.effectiveCycle + 1}周期〜</span>
                         <span class="text-[10px] font-bold text-slate-600">${m.sources.map(s => s.city).join(', ')}</span>
                         <span class="mx-2 text-slate-300">→</span>
                         <span class="text-[11px] font-black text-slate-800">${m.targetCity}</span>
@@ -676,17 +744,17 @@
 
         function appUIExecuteMerger() {
             const target = document.getElementById('ui-merger-target').value.trim();
-            if(!target) return alert("新市区町村名を入力してください");
-            
+            if (!target) return alert("新市区町村名を入力してください");
+
             const rows = document.querySelectorAll('.merger-source-row');
             const sources = [];
             rows.forEach(row => {
                 const p = row.querySelector('.m-pref').value.trim();
                 const c = row.querySelector('.m-city').value.trim();
-                if(p && c) sources.push({pref: p, city: c});
+                if (p && c) sources.push({ pref: p, city: c });
             });
 
-            if(sources.length === 0) return alert("統合元を1つ以上（都道府県と市区町村）正しく入力してください");
+            if (sources.length === 0) return alert("統合元を1つ以上（都道府県と市区町村）正しく入力してください");
 
             const merger = {
                 id: Date.now(),
@@ -762,25 +830,25 @@
 
             document.getElementById('ui-cycle-period').textContent = `${fmt(cycleStart)} 〜 ${fmt(cycleEnd)}`;
             const cdEl = document.getElementById('ui-cycle-countdown');
-            if(cdEl) {
+            if (cdEl) {
                 cdEl.textContent = cdText;
                 cdEl.className = `text-[11px] font-black mt-1 ${cdColor}`;
             }
 
             const rateEl = document.getElementById('ui-stat-rate');
-            if(rateEl) rateEl.textContent = `${rate.toFixed(2)}%`;
-            
+            if (rateEl) rateEl.textContent = `${rate.toFixed(2)}%`;
+
             const progressEl = document.getElementById('ui-stat-progress');
-            if(progressEl) progressEl.style.width = `${Math.min(rate, 100)}%`;
-            
+            if (progressEl) progressEl.style.width = `${Math.min(rate, 100)}%`;
+
             const uniqueEl = document.getElementById('ui-unique-count');
-            if(uniqueEl) uniqueEl.textContent = allTimeUnique;
-            
+            if (uniqueEl) uniqueEl.textContent = allTimeUnique;
+
             const dispCycleEl = document.getElementById('ui-disp-cycle');
-            if(dispCycleEl) dispCycleEl.textContent = appState.activeCycle + 1;
-            
+            if (dispCycleEl) dispCycleEl.textContent = appState.activeCycle + 1;
+
             const totalDenomEl = document.getElementById('ui-total-denom');
-            if(totalDenomEl) totalDenomEl.textContent = `/ ${totalDenom}`;
+            if (totalDenomEl) totalDenomEl.textContent = `/ ${totalDenom}`;
         }
 
         function appCheckDuplicate() {
@@ -795,9 +863,9 @@
 
         function appRenderPrefList() {
             const ctn = document.getElementById('ui-pref-list');
-            if(!ctn) return;
+            if (!ctn) return;
             ctn.innerHTML = '';
-            
+
             PREFS.forEach(p => {
                 const pRecs = appState.enrichedRecords.filter(r => r.pref === p);
                 // 統合後の名称ベースでユニークな訪問済み自治体数をカウント
@@ -813,7 +881,7 @@
                 div.innerHTML = `
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[11px] font-black tracking-tighter">${p}</span>
-                        <span class="text-[10px] font-bold text-indigo-400 group-hover:text-indigo-600 ${active ? 'text-indigo-300':''}">${count} / ${denom}</span>
+                        <span class="text-[10px] font-bold text-indigo-400 group-hover:text-indigo-600 ${active ? 'text-indigo-300' : ''}">${count} / ${denom}</span>
                     </div>
                     <div class="w-full bg-slate-100 ${active ? 'bg-white/10' : ''} h-1 rounded-full overflow-hidden">
                         <div class="h-full bg-indigo-500 ${active ? 'bg-emerald-400' : ''}" style="width: ${rate}%"></div>
@@ -824,15 +892,15 @@
 
         function appRenderCityGrid() {
             const ctn = document.getElementById('ui-city-grid');
-            if(!ctn) return;
+            if (!ctn) return;
             ctn.innerHTML = '';
-            
+
             const p = appState.currentViewPref;
             const prefTitle = document.getElementById('ui-current-pref-name');
-            if(prefTitle) prefTitle.textContent = p;
+            if (prefTitle) prefTitle.textContent = p;
 
             const allRecordsInPref = appState.enrichedRecords.filter(r => r.pref === p);
-            
+
             // 市町村名単位で集計（統合後の名称）
             const cityGroups = {};
             allRecordsInPref.forEach(r => {
@@ -841,24 +909,24 @@
             });
 
             // ソートロジック：今周期訪問（時系列） -> 過去のみ訪問（時系列）
-            const uniqueCities = Object.keys(cityGroups).sort((a,b) => {
+            const uniqueCities = Object.keys(cityGroups).sort((a, b) => {
                 const grpA = cityGroups[a];
                 const grpB = cityGroups[b];
                 const hasCurrA = grpA.some(r => r.info.label !== "PAST" && r.info.label !== "FUTURE");
                 const hasCurrB = grpB.some(r => r.info.label !== "PAST" && r.info.label !== "FUTURE");
-                
+
                 if (hasCurrA && !hasCurrB) return -1;
                 if (!hasCurrA && hasCurrB) return 1;
-                
-                const timeA = grpA.filter(r => r.info.label !== "FUTURE").sort((x,y)=>x.ts - y.ts)[0]?.ts || 0;
-                const timeB = grpB.filter(r => r.info.label !== "FUTURE").sort((x,y)=>x.ts - y.ts)[0]?.ts || 0;
+
+                const timeA = grpA.filter(r => r.info.label !== "FUTURE").sort((x, y) => x.ts - y.ts)[0]?.ts || 0;
+                const timeB = grpB.filter(r => r.info.label !== "FUTURE").sort((x, y) => x.ts - y.ts)[0]?.ts || 0;
                 return timeA - timeB;
             });
 
             // 各グループ（自治体）ごとに1枚のカードを出す
             uniqueCities.forEach(cityName => {
-                const rc = cityGroups[cityName].sort((a,b) => a.ts - b.ts); // 古い順
-                
+                const rc = cityGroups[cityName].sort((a, b) => a.ts - b.ts); // 古い順
+
                 // 周期分類
                 const currentRecs = rc.filter(r => r.info.label !== "PAST" && r.info.label !== "FUTURE");
                 const pastRecs = rc.filter(r => r.info.label === "PAST");
@@ -871,7 +939,7 @@
                 let displayRec;
                 if (currentRecs.length > 0) {
                     // 今周期の訪問がある場合は、今周期の中での最新を表示 (Rule 1)
-                    displayRec = [...currentRecs].sort((a,b)=>b.ts - a.ts)[0];
+                    displayRec = [...currentRecs].sort((a, b) => b.ts - a.ts)[0];
                 } else {
                     // 今周期になければ、最過去の記録を表示 (Rule 1-Earnier, Rule 2, Rule 3-Past)
                     displayRec = pastRecs[0];
@@ -882,7 +950,7 @@
                 const info = displayRec.info;
                 const hasCurrent = currentRecs.length > 0;
                 const hasPast = pastRecs.length > 0;
-                
+
                 // 「過去訪問アリ」の表示（今周期に訪問があり、かつ過去にも訪問がある場合のみ）
                 let pastInfoHtml = "";
                 if (hasCurrent && hasPast) {
@@ -905,7 +973,7 @@
             const visitedUniqueCount = uniqueCities.filter(c => cityGroups[c].some(r => r.info.label !== "FUTURE")).length;
             const denom = appState.config.prefDenominators[appState.activeCycle]?.[p] || DEFAULT_PREF_DATA[p];
             const frac = document.getElementById('ui-pref-fraction');
-            if(frac) frac.textContent = `${visitedUniqueCount} / ${denom}`;
+            if (frac) frac.textContent = `${visitedUniqueCount} / ${denom}`;
         }
 
         let globalGeojsonData = null;
@@ -935,14 +1003,14 @@
             const p = appState.currentViewPref;
             const ctn = document.getElementById('ui-map-container');
             if (!ctn || document.getElementById('modal-map').style.display === 'none') return;
-            
+
             const loader = document.getElementById('ui-map-loading');
-            
+
             if (!globalGeojsonData) {
                 loader.textContent = "🗺️ 全1892市区町村の地図データを展開しています... (初回のみ)";
                 loader.className = "font-black text-indigo-500 text-[14px] animate-pulse absolute inset-0 flex items-center justify-center bg-white/90 z-20";
                 loader.style.display = 'flex';
-                
+
                 try {
                     if (!window.japanGeoJson) {
                         throw new Error("japanGeoJson was not found in global window object");
@@ -955,27 +1023,27 @@
                     return;
                 }
             }
-            
+
             loader.style.display = 'none';
-            
+
             if (!leafletMap) {
                 leafletMap = L.map('ui-map-container', {
                     zoomControl: true,
                     minZoom: 5,
                     maxZoom: 14
                 });
-                
+
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
                     attribution: '&copy; OpenStreetMap'
                 }).addTo(leafletMap);
             }
-            
+
             if (leafletGeoJsonLayer) {
                 leafletMap.removeLayer(leafletGeoJsonLayer);
             }
-            
+
             const prefFeatures = isNational ? globalGeojsonData.features : globalGeojsonData.features.filter(f => getNormalizedPref(f.properties.N03_001) === p);
-            
+
             leafletGeoJsonLayer = L.geoJSON(prefFeatures, {
                 style: function (feature) {
                     let featurePref = getNormalizedPref(feature.properties.N03_001);
@@ -983,35 +1051,35 @@
                     let gunName = (feature.properties.N03_003 || feature.properties.gun_name || "").trim();
                     if (gunName === null || gunName === "null") gunName = "";
                     if (cityName === null || cityName === "null") cityName = "";
-                    
+
                     // 重複防止（名古屋市 + 名古屋市北区 対策）
                     let fullName = cityName;
                     if (gunName && !cityName.startsWith(gunName)) {
                         fullName = gunName + cityName;
                     }
-                    
+
                     // 統合ロジックの適用（現在の周期基準）
                     const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
-                    for(const m of activeMergers) {
+                    for (const m of activeMergers) {
                         if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName))) {
                             fullName = m.targetCity;
                             break;
                         }
                     }
-                    
+
                     const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
                     let matchedRec = cityRecs.find(r => r.city === fullName);
-                    
+
                     let fillColor = "#f1f5f9";
                     let weight = 1;
                     let color = "#cbd5e1";
                     let opacity = 0.8;
 
                     if (matchedRec) {
-                        const rc = cityRecs.filter(r => r.city === fullName).sort((a,b)=>b.ts - a.ts);
+                        const rc = cityRecs.filter(r => r.city === fullName).sort((a, b) => b.ts - a.ts);
                         const latestInfo = rc[0].info;
                         const l = latestInfo.label;
-                        
+
                         if (l === "PAST") {
                             if (!appState.showPastCityGrid) {
                                 fillColor = "#f1f5f9";
@@ -1023,14 +1091,14 @@
                         else if (l === "2ND YR") fillColor = "#ffcc00";
                         else if (l === "3RD YR") fillColor = "#00e676";
                         else if (l === "4TH YR") fillColor = "#00d4ff";
-                        
+
                         weight = 1.5;
-                        if(l !== "PAST" || appState.showPastCityGrid) {
+                        if (l !== "PAST" || appState.showPastCityGrid) {
                             color = "#ffffff";
                             opacity = 0.9;
                         }
                     }
-                    
+
                     return {
                         fillColor: fillColor,
                         weight: weight,
@@ -1044,26 +1112,26 @@
                     let gunName = (feature.properties.N03_003 || "").trim();
                     if (gunName === null || gunName === "null") gunName = "";
                     if (cityName === null || cityName === "null") cityName = "";
-                    
+
                     // 重複防止（ここが修正漏れ箇所でした）
                     let fullName = cityName;
                     if (gunName && !cityName.startsWith(gunName)) {
                         fullName = gunName + cityName;
                     }
-                    
+
                     const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
-                    for(const m of activeMergers) {
+                    for (const m of activeMergers) {
                         if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName))) {
                             fullName = m.targetCity;
                             break;
                         }
                     }
-                    
+
                     let tooltipContent = `<div class="font-sans font-black text-slate-800 text-[12px]">${featurePref} ${fullName}</div>`;
-                    
+
                     const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
-                    let rc = cityRecs.filter(r => r.city === fullName).sort((a,b)=>b.ts - a.ts);
-                    
+                    let rc = cityRecs.filter(r => r.city === fullName).sort((a, b) => b.ts - a.ts);
+
                     if (rc.length > 0) {
                         const latest = rc[0];
                         const infoClass = latest.info.label === 'PAST' ? 'text-slate-400' : 'text-indigo-500';
@@ -1071,11 +1139,11 @@
                     } else {
                         tooltipContent += `<div class="mt-1 text-[10px] font-bold text-slate-400">未訪問</div>`;
                     }
-                    
+
                     layer.bindTooltip(tooltipContent, { permanent: false, direction: "top", opacity: 0.95 });
                 }
             }).addTo(leafletMap);
-            
+
             // Re-calc layout after modal display
             setTimeout(() => {
                 leafletMap.invalidateSize();
@@ -1092,7 +1160,7 @@
                 const d = a.ts - b.ts;
                 return d !== 0 ? d : a.id - b.id;
             }); // 古い順、同日は登録順
-            
+
             let hidePastCount = 1; // 「過去分を隠す」時のカウンタ
             sorted.forEach((r) => {
                 const info = r.info;
@@ -1110,7 +1178,7 @@
                     ).sort((a, b) => a.ts - b.ts);
                     if (pastVisits.length > 0 && r.id !== pastVisits[0].id) return;
                 }
-                
+
                 let pastVisitHtml = "";
                 if (info.label !== "PAST") {
                     const pastVisits = appState.enrichedRecords.filter(
@@ -1132,7 +1200,7 @@
                 if (appState.showPastHistory) {
                     // 「過去分を表示」の時
                     if (info.label === "PAST") {
-                        rankStr = ""; 
+                        rankStr = "";
                     } else {
                         const hasPast = appState.enrichedRecords.some(x => x.pref === r.pref && x.city === r.city && x.info.label === "PAST");
                         if (hasPast) {
@@ -1172,9 +1240,9 @@
             }
 
             // 「都道府県順（標準順）」→「訪問日が古い順」に表示
-            const matches = appState.enrichedRecords.filter(c => 
+            const matches = appState.enrichedRecords.filter(c =>
                 c.city.includes(query) || c.pref.includes(query)
-            ).sort((a,b) => {
+            ).sort((a, b) => {
                 const idxA = PREFS.indexOf(a.pref);
                 const idxB = PREFS.indexOf(b.pref);
                 if (idxA !== idxB) return idxA - idxB;
@@ -1210,7 +1278,7 @@
             document.getElementById('ui-search-input').value = "";
             document.getElementById('ui-search-results').classList.add('hidden');
             appRenderAll();
-            
+
             // Auto close mobile keyboard or blur
             document.activeElement.blur();
 
