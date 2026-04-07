@@ -582,16 +582,11 @@
         }
 
         function appRenderAll(preventFirebaseSave = false) {
-            // 統合データの解決 (RecordNormalization)
-            const resolvedRecords = appState.records.map(r => {
-                const targetDate = new Date(r.date);
-                const base = new Date(appState.config.baseStart);
-                let diff = (targetDate.getFullYear() - base.getFullYear()) * 12 + (targetDate.getMonth() - base.getMonth());
-                if (targetDate.getDate() < base.getDate()) diff--;
-                const cycleAtRecord = Math.max(0, Math.floor(Math.floor(diff / 12) / 4));
+            // 現在表示中の周期で有効な統合設定を抽出
+            const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
 
-                // この記録が作成された時点で有効な統合設定を探す
-                const activeMergers = appState.mergers.filter(m => cycleAtRecord >= m.effectiveCycle);
+            // 全レコードを「現在の周期の視点」で統合後の名前に読み替える
+            const normalizedRecords = appState.records.map(r => {
                 let currentCity = r.city;
                 for(const m of activeMergers) {
                     if (m.sources.some(s => s.pref === r.pref && s.city === r.city)) {
@@ -599,11 +594,12 @@
                         break;
                     }
                 }
-                return { ...r, pref: r.pref, city: currentCity, ts: targetDate.getTime(), cycleAtRecord };
+                const targetDate = new Date(r.date);
+                return { ...r, pref: r.pref, city: currentCity, ts: targetDate.getTime() };
             });
 
             // 統合後の名称単位で全期間の順序を計算
-            const allSorted = [...resolvedRecords].sort((a,b) => {
+            const allSorted = [...normalizedRecords].sort((a,b) => {
                 const d = a.ts - b.ts;
                 return d !== 0 ? d : a.id - b.id;
             });
@@ -618,8 +614,8 @@
             });
             appState.rankMap = rankMap;
 
-            // 各レコードに現在の周期に基づいた情報を付与
-            appState.enrichedRecords = resolvedRecords.map(r => ({
+            // 濃厚なレコード情報（enrichedRecords）の生成
+            appState.enrichedRecords = normalizedRecords.map(r => ({
                 ...r,
                 info: getYearInfo(r.date)
             }));
@@ -794,106 +790,77 @@
         }
 
         function appRenderPrefList() {
-            const ctn = document.getElementById('ui-pref-list'); ctn.innerHTML = '';
-            const currentRecords = appState.enrichedRecords.filter(r => r.info.label !== "FUTURE");
+            const ctn = document.getElementById('ui-pref-list');
+            if(!ctn) return;
+            ctn.innerHTML = '';
+            
             PREFS.forEach(p => {
-                const visitedCount = new Set(currentRecords.filter(r => r.pref === p).map(r => r.city)).size;
-                const cycleDenom = appState.config.prefDenominators[appState.activeCycle] || appState.config.prefDenominators[0];
-                const denom = cycleDenom[p] || 0;
-                const rate = denom > 0 ? (visitedCount / denom) * 100 : 0;
+                const pRecs = appState.enrichedRecords.filter(r => r.pref === p);
+                // 統合後の名称ベースでユニークな訪問済み自治体数をカウント
+                const visitedCities = new Set(pRecs.filter(r => r.info.label !== "FUTURE").map(r => r.city));
+                const count = visitedCities.size;
+                const denom = appState.config.prefDenominators[appState.activeCycle]?.[p] || DEFAULT_PREF_DATA[p];
+                const active = (p === appState.currentViewPref);
+                const rate = denom > 0 ? (count / denom) * 100 : 0;
 
                 const div = document.createElement('div');
-                div.className = `p-4 mb-2 rounded-2xl cursor-pointer transition-all border-2 ${appState.currentViewPref === p ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-transparent hover:border-slate-100'}`;
+                div.className = `p-4 mb-2 rounded-2xl cursor-pointer transition-all border-2 border-transparent ${active ? 'bg-slate-900 text-white shadow-xl scale-[1.02]' : 'bg-white hover:bg-slate-50 text-slate-600 shadow-sm'}`;
                 div.onclick = () => { appState.currentViewPref = p; appRenderAll(); };
                 div.innerHTML = `
-            <div class="flex justify-between items-center font-black text-[11px] mb-1"><span>${p}</span><span>${rate.toFixed(0)}%</span></div>
-            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                <div class="bg-indigo-500 h-full" style="width:${rate}%"></div>
-            </div>`;
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[11px] font-black tracking-tighter">${p}</span>
+                        <span class="text-[10px] font-bold text-indigo-400 group-hover:text-indigo-600 ${active ? 'text-indigo-300':''}">${count} / ${denom}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 ${active ? 'bg-white/10' : ''} h-1 rounded-full overflow-hidden">
+                        <div class="h-full bg-indigo-500 ${active ? 'bg-emerald-400' : ''}" style="width: ${rate}%"></div>
+                    </div>`;
                 ctn.appendChild(div);
             });
         }
 
         function appRenderCityGrid() {
+            const ctn = document.getElementById('ui-city-grid');
+            if(!ctn) return;
+            ctn.innerHTML = '';
+            
             const p = appState.currentViewPref;
-            const ctn = document.getElementById('ui-city-grid'); ctn.innerHTML = '';
-            document.getElementById('ui-current-pref-name').textContent = p;
+            const prefTitle = document.getElementById('ui-current-pref-name');
+            if(prefTitle) prefTitle.textContent = p;
+
+            const allRecordsInPref = appState.enrichedRecords.filter(r => r.pref === p);
             
-            const prefRecs = appState.enrichedRecords.filter(r => r.pref === p && r.info.label !== "FUTURE");
-            
-            const cycleDenom = appState.config.prefDenominators[appState.activeCycle] || appState.config.prefDenominators[0];
-            const denom = cycleDenom[p] || 0;
-            
-            const cityMap = {};
-            prefRecs.forEach(r => {
-                if (!cityMap[r.city]) cityMap[r.city] = [];
-                cityMap[r.city].push(r);
+            // 市町村名単位で集計（統合後の名称）
+            const cityGroups = {};
+            allRecordsInPref.forEach(r => {
+                if (!cityGroups[r.city]) cityGroups[r.city] = [];
+                cityGroups[r.city].push(r);
             });
 
-            const cityCards = Object.keys(cityMap).map(city => {
-                const rc = cityMap[city];
-                rc.sort((a,b) => {
-                    const d = a.ts - b.ts;
-                    return d !== 0 ? d : a.id - b.id;
-                });
+            const uniqueCities = Object.keys(cityGroups);
+            uniqueCities.forEach(cityName => {
+                const rc = cityGroups[cityName].sort((a,b) => b.ts - a.ts);
+                const hasCurrent = rc.some(r => r.info.label !== "PAST" && r.info.label !== "FUTURE");
+                const hasPastOnly = rc.every(r => r.info.label === "PAST");
                 
-                const currentVisits = rc.filter(v => v.info.label !== "PAST");
-                const hasCurrent = currentVisits.length > 0;
-                
-                let sortKeyDate, sortKeyId;
-                if (hasCurrent) {
-                    sortKeyDate = currentVisits[0].ts;
-                    sortKeyId = currentVisits[0].id;
-                } else {
-                    sortKeyDate = rc[0].ts;
-                    sortKeyId = rc[0].id;
-                }
-                
-                return { city, hasCurrent, sortKeyDate, sortKeyId, rc, currentVisits };
-            });
+                // 過去分を隠す設定の場合
+                if (!appState.showPastCityGrid && !hasCurrent) return;
 
-            cityCards.sort((a, b) => {
-                if (a.hasCurrent !== b.hasCurrent) return a.hasCurrent ? -1 : 1;
-                const d = a.sortKeyDate - b.sortKeyDate;
-                if (d !== 0) return d;
-                return a.sortKeyId - b.sortKeyId;
-            });
-
-            let displayedCount = 0;
-            cityCards.forEach(card => {
-                const { city, rc, hasCurrent, currentVisits } = card;
-                
-                const latest = rc.slice().sort((a,b) => b.ts - a.ts)[0];
-                const info = latest.info;
-                
-                if (!appState.showPastCityGrid && info.label === "PAST") return;
-                
-                let pastBadgeHtml = "";
-                if (info.label !== "PAST") {
-                    const pastVisits = appState.enrichedRecords.filter(
-                        x => x.pref === p && x.city === city && x.info.label === "PAST"
-                    ).sort((a,b) => b.ts - a.ts);
-                    if (pastVisits.length > 0) {
-                        const recentDate = pastVisits[0].date;
-                        pastBadgeHtml = `<div class="mt-3 text-[9px] font-black text-rose-500 bg-rose-50 border border-rose-100 py-1.5 px-1 rounded-lg leading-tight w-full break-words">過去訪問アリ<br>${recentDate}</div>`;
-                    }
-                }
-                
-                const displayDateStr = hasCurrent ? currentVisits[0].date : rc[0].date;
-                
-                displayedCount++;
+                const displayRec = rc[0]; // 最新の記録を代表とする
                 const div = document.createElement('div');
-                div.className = `p-4 flex flex-col items-center justify-center rounded-[24px] text-center bg-white shadow-sm border-2 ${info.border}`;
+                div.className = "card-city p-5 animate-slide-up flex flex-col items-center text-center";
                 div.innerHTML = `
-            <div class="text-[12px] font-black text-slate-800">${city}</div>
-            <div class="text-[9px] font-bold text-slate-400 mb-2">${displayDateStr}</div>
-            <div class="label-badge ${info.class}">${info.label}</div>
-            ${pastBadgeHtml}
-        `;
+                    <div class="text-[11px] font-black text-slate-800 mb-1 leading-tight h-8 flex items-center justify-center">${cityName}</div>
+                    <div class="text-[9px] font-bold text-slate-400 mb-3">${displayRec.date}</div>
+                    <span class="label-badge ${displayRec.info.class}">${displayRec.info.label}</span>
+                `;
                 ctn.appendChild(div);
             });
 
-            document.getElementById('ui-pref-fraction').textContent = `${displayedCount} / ${denom}`;
+            // 進捗表示の更新
+            const visitedUniqueCount = uniqueCities.filter(c => cityGroups[c].some(r => r.info.label !== "FUTURE")).length;
+            const denom = appState.config.prefDenominators[appState.activeCycle]?.[p] || DEFAULT_PREF_DATA[p];
+            const frac = document.getElementById('ui-pref-fraction');
+            if(frac) frac.textContent = `${visitedUniqueCount} / ${denom}`;
         }
 
         let globalGeojsonData = null;
@@ -973,7 +940,7 @@
                     if (cityName === null || cityName === "null") cityName = "";
                     let fullName = gunName + cityName;
                     
-                    // 統合ロジックの適用
+                    // 統合ロジックの適用（現在の周期基準）
                     const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
                     for(const m of activeMergers) {
                         if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName))) {
