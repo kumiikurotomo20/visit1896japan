@@ -424,19 +424,58 @@
         };
 
         function appInit() {
+            // --- データ復旧・移行ロジック ---
+            const KEYS = ['visit_v95_recs', 'shikuchoson_visit_recs', 'kumiikurotomo_visit_state_v9', 'visit_state_v9'];
+            let loadedRecs = [];
+            let loadedCfg = null;
+            let loadedMergers = [];
+
+            // 全ての可能性のあるキーをスキャン
+            for (const key of KEYS) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        // 単一オブジェクト形式 (v9用) か配列形式かを判別
+                        if (Array.isArray(parsed) && parsed.length > loadedRecs.length) {
+                            loadedRecs = parsed;
+                        } else if (parsed && parsed.records && parsed.records.length > loadedRecs.length) {
+                            loadedRecs = parsed.records;
+                            if (parsed.config) loadedCfg = parsed.config;
+                            if (parsed.mergers) loadedMergers = parsed.mergers;
+                        }
+                    } catch(e) {}
+                }
+            }
+
+            // 個別キーもチェック
             const rLocal = localStorage.getItem('visit_v95_recs');
             const cLocal = localStorage.getItem('visit_v95_cfg');
             const mLocal = localStorage.getItem('visit_v95_mergers');
-            if (rLocal) appState.records = JSON.parse(rLocal);
-            if (cLocal) {
-                let parsedCfg = JSON.parse(cLocal);
-                if (!Array.isArray(parsedCfg.prefDenominators)) {
-                    const old = parsedCfg.prefDenominators || { ...DEFAULT_PREF_DATA };
-                    parsedCfg.prefDenominators = [{ ...old }, { ...old }, { ...old }, { ...old }];
-                }
-                appState.config = parsedCfg;
+            if (rLocal) {
+                const p = JSON.parse(rLocal);
+                if (p.length > loadedRecs.length) loadedRecs = p;
             }
-            if (mLocal) appState.mergers = JSON.parse(mLocal);
+            if (cLocal) loadedCfg = JSON.parse(cLocal);
+            if (mLocal) loadedMergers = JSON.parse(mLocal);
+
+            // 読み込んだデータをセット
+            appState.records = loadedRecs;
+            if (loadedCfg) {
+                if (!Array.isArray(loadedCfg.prefDenominators)) {
+                    const old = loadedCfg.prefDenominators || { ...DEFAULT_PREF_DATA };
+                    loadedCfg.prefDenominators = [{ ...old }, { ...old }, { ...old }, { ...old }];
+                }
+                appState.config = loadedCfg;
+            }
+            appState.mergers = loadedMergers;
+
+            // 万が一のためのバックアップ作成
+            if (appState.records.length > 0) {
+                localStorage.setItem('visit_v95_recs_backup', JSON.stringify(appState.records));
+                localStorage.setItem('visit_v95_cfg_backup', JSON.stringify(appState.config));
+            }
+            // --------------------------------
 
             PREFS.forEach(p => {
                 const o = document.createElement('option');
@@ -454,16 +493,37 @@
                     if (doc.exists) {
                         const data = doc.data();
                         let needsRender = false;
-                        if (data.records && JSON.stringify(appState.records) !== JSON.stringify(data.records)) {
-                            appState.records = data.records;
-                            needsRender = true;
+                        
+                        // 【重要】リモートにある記録がローカルより極端に少ない（または空）の場合は、
+                        // 上書きせずにローカルのデータをリモートに共有する
+                        if (data.records && Array.isArray(data.records)) {
+                             if (data.records.length < appState.records.length && data.records.length === 0) {
+                                 // クラウドが空なので、ローカルの記録をクラウドに送り込む
+                                 appRenderAll(false); 
+                                 return;
+                             }
+                             if (JSON.stringify(appState.records) !== JSON.stringify(data.records)) {
+                                 appState.records = data.records;
+                                 needsRender = true;
+                             }
                         }
+                        
                         if (data.config && JSON.stringify(appState.config) !== JSON.stringify(data.config)) {
                             appState.config = data.config;
                             needsRender = true;
                         }
+                        if (data.mergers && JSON.stringify(appState.mergers) !== JSON.stringify(data.mergers)) {
+                            appState.mergers = data.mergers;
+                            needsRender = true;
+                        }
+                        
                         if (needsRender) {
                             appRenderAll(true);
+                        }
+                    } else {
+                        // リモートにドキュメントが存在しない場合は、現在のローカルデータを初期値としてアップロード
+                        if (appState.records.length > 0) {
+                            appRenderAll(false);
                         }
                     }
                 });
@@ -575,6 +635,7 @@
                 getSyncDocRef().set({
                     records: appState.records,
                     config: appState.config,
+                    mergers: appState.mergers,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }).catch(e => console.error("Firebase sync error", e));
             }
