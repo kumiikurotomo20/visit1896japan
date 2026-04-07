@@ -815,13 +815,7 @@
                         x => x.pref === r.pref && x.city === r.city && x.info.label !== "PAST" && x.info.label !== "FUTURE"
                     );
                     if (hasCurrentVisit) return;
-
-                    const pastVisits = appState.enrichedRecords.filter(
-                        x => x.pref === r.pref && x.city === r.city && x.info.label === "PAST"
-                    ).sort((a, b) => a.ts - b.ts);
-                    if (pastVisits.length > 0 && r.id !== pastVisits[0].id) return;
                 }
-                
                 let pastVisitHtml = "";
                 if (info.label !== "PAST") {
                     const pastVisits = appState.enrichedRecords.filter(
@@ -834,17 +828,10 @@
                     }
                 }
 
-                let rankStr = "";
-                let rankClass = "";
-                if (info.label !== "PAST") {
-                    rankStr = String(displayIdx++);
-                    rankClass = "text-black font-black";
-                }
-
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors";
                 tr.innerHTML = `
-            <td class="py-4 px-2 font-mono ${rankClass} text-center">${rankStr}</td>
+            <td class="py-4 px-2 font-mono text-slate-300 font-bold">#${displayIdx++}</td>
             <td class="py-4 px-2 font-bold text-slate-600">${r.date}</td>
             <td class="py-4 px-2"><span class="label-badge ${info.class}">${info.label}</span></td>
             <td class="py-4 px-2 font-black text-slate-900">${r.pref} ${r.city}${pastVisitHtml}</td>
