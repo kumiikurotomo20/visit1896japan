@@ -903,12 +903,12 @@
                         if (hasPast) {
                             rankStr = ""; // 重複訪問（過去訪問アリ）も表示しない
                         } else {
-                            // 新規訪問のみ表示。「その画面での順序」
-                            rankStr = String(hidePastCount++);
+                            // 新規訪問のみ表示。「全期間実質訪問数（通し番号）」を表示
+                            rankStr = String(rank);
                         }
                     }
                 } else {
-                    // 「過去分を隠す」の時（現在周期のみ表示）
+                    // 「過去分を隠す」の時（現在周期のみ表示）：表示順に1, 2, 3...
                     rankStr = String(hidePastCount++);
                 }
 
