@@ -890,25 +890,26 @@
 
                 // 番号 (No.) の採番ロジック
                 let rankStr = "";
-                let rankClass = "text-black font-black";
+                let rankClass = "text-black font-black text-sm"; // はっきり黒い文字
                 const key = `${r.pref}-${r.city}`;
                 const rank = appState.rankMap[key];
 
                 if (appState.showPastHistory) {
                     // 「過去分を表示」の時
                     if (info.label === "PAST") {
-                        rankStr = ""; // 過去分は番号を表示しない
+                        rankStr = ""; 
                     } else {
                         const hasPast = appState.enrichedRecords.some(x => x.pref === r.pref && x.city === r.city && x.info.label === "PAST");
                         if (hasPast) {
                             rankStr = ""; // 重複訪問（過去訪問アリ）も表示しない
                         } else {
-                            rankStr = String(rank); // 新規訪問のみ全期間通し番号を表示
+                            // 新規訪問のみ表示。「その画面での順序 (全期間累計)」
+                            rankStr = `${hidePastCount++} (${rank})`;
                         }
                     }
                 } else {
                     // 「過去分を隠す」の時（現在周期のみ表示）
-                    rankStr = String(hidePastCount++);
+                    rankStr = `${hidePastCount++} (${rank})`;
                 }
 
                 const tr = document.createElement('tr');
@@ -935,18 +936,10 @@
                 return;
             }
 
-            // Group by city to find the most representative record
-            const cityInfoMap = {};
-            appState.enrichedRecords.forEach(r => {
-                const key = `${r.pref}-${r.city}`;
-                if (!cityInfoMap[key] || r.ts > cityInfoMap[key].ts) {
-                    cityInfoMap[key] = r;
-                }
-            });
-
-            const matches = Object.values(cityInfoMap).filter(c => 
+            // マッチする全記録を新しい順に表示
+            const matches = appState.enrichedRecords.filter(c => 
                 c.city.includes(query) || c.pref.includes(query)
-            ).sort((a,b) => a.ts - b.ts).slice(0, 20);
+            ).sort((a,b) => b.ts - a.ts).slice(0, 40);
 
             if (matches.length === 0) {
                 resultsCtn.innerHTML = '<div class="p-6 text-xs font-bold text-slate-400 text-center">該当する市区町村が見つかりません</div>';
@@ -960,7 +953,7 @@
                                 <div class="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">${m.pref}</div>
                                 <div class="text-sm font-black text-slate-800 group-hover:text-emerald-500 transition-colors">${m.city}</div>
                             </div>
-                            <div class="text-[10px] font-mono font-black text-slate-200">#${rank}</div>
+                            <div class="text-[10px] font-mono font-black text-slate-400">(${rank})</div>
                         </div>
                         <div class="flex items-center gap-2 mt-2">
                              <span class="label-badge ${m.info.class} scale-75 origin-left" style="padding: 2px 8px; font-size: 9px;">${m.info.label}</span>
