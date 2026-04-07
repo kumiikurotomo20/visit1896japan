@@ -869,19 +869,19 @@
 
                 if (appState.showPastHistory) {
                     // 「過去分を表示」の時
-                    const hasPast = appState.enrichedRecords.some(x => x.pref === r.pref && x.city === r.city && x.info.label === "PAST");
-                    const hasCurrent = appState.enrichedRecords.some(x => x.pref === r.pref && x.city === r.city && x.info.label !== "PAST" && x.info.label !== "FUTURE");
-                    const isDuplicate = hasPast && hasCurrent;
-
-                    if (isDuplicate) {
-                        rankStr = "-"; // 重複訪問時は何も表示しない（またはハイフン）
-                        rankClass = "text-slate-200";
+                    if (info.label === "PAST") {
+                        rankStr = ""; // 過去分は番号を表示しない
                     } else {
-                        rankStr = `#${rank}`;
+                        const hasPast = appState.enrichedRecords.some(x => x.pref === r.pref && x.city === r.city && x.info.label === "PAST");
+                        if (hasPast) {
+                            rankStr = ""; // 重複訪問（過去訪問アリ）も表示しない
+                        } else {
+                            rankStr = String(rank); // 新規訪問のみ全期間通し番号を表示
+                        }
                     }
                 } else {
-                    // 「過去分を隠す」の時
-                    rankStr = `#${hidePastCount++}`;
+                    // 「過去分を隠す」の時（現在周期のみ表示）
+                    rankStr = String(hidePastCount++);
                 }
 
                 const tr = document.createElement('tr');
