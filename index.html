@@ -255,26 +255,26 @@
                     class="text-slate-300 hover:text-slate-900 text-2xl">✕</button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-slate-50 p-6 rounded-3xl">
                     <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">周期の基準開始日</label>
                     <input type="date" id="cfg-start" class="w-full bg-white border p-4 rounded-2xl font-bold outline-none">
                 </div>
-                <div class="bg-slate-50 p-6 rounded-3xl flex items-center justify-between">
-                    <div>
-                        <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">統計周期の管理</label>
-                        <p class="text-[9px] text-slate-400 font-bold">現在の周期数: <span id="ui-cycle-count-badge" class="font-black text-indigo-500">0</span></p>
-                    </div>
-                    <button onclick="appConfigAddCycle()" class="px-6 py-3 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95">＋ 新しい周期を追加</button>
+                <div class="bg-indigo-50/50 p-6 rounded-3xl flex flex-col justify-between">
+                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">統計周期の管理</label>
+                    <div class="flex items-center justify-between">
+                    <div id="cfg-cycle-switcher" class="flex gap-2 mb-3"></div>
+                    <button onclick="appConfigAddCycle()" class="w-full py-2 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl text-[9px] font-black transition-all">＋ 周期を追加</button>
+                </div>
+                <div class="bg-rose-50/30 p-6 rounded-3xl">
+                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">全市区町村 総分母</label>
+                    <input type="text" id="cfg-total-denominator" class="w-full bg-white border-2 border-rose-100 p-4 rounded-2xl font-black text-rose-500 outline-none text-xl" readonly value="0">
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto pr-4 scroll-hide border-t pt-6">
-                <div class="flex justify-between items-center mb-6">
-                    <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">▼ 各都道府県の分母設定</p>
-                    <div class="flex gap-2" id="cfg-cycle-switcher"></div>
-                </div>
-                <div id="cfg-pref-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-12"></div>
+            <div class="flex-1 overflow-y-auto pr-4 scroll-hide">
+                <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-6">▼ 都道府県別の詳細分母（書き換えると総分母に反映されます）</p>
+                <div id="cfg-pref-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-14"></div>
 
                 <!-- Merger Section -->
                 <div class="pt-8 border-t border-slate-100 mb-10">
@@ -282,9 +282,7 @@
                         <span class="text-2xl">🔄</span> 市区町村の合併・名称変更
                     </h4>
                     
-                    <div id="ui-merger-active-list" class="mb-8 space-y-2">
-                        <!-- 登録済みの統合設定 -->
-                    </div>
+                    <div id="ui-merger-active-list" class="mb-8 space-y-2"></div>
 
                     <div class="bg-indigo-50/30 p-8 rounded-[32px] border-2 border-dashed border-indigo-100">
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">■ 統合元 (旧市区町村を指定)</label>
@@ -304,7 +302,7 @@
                             <div class="flex flex-col sm:flex-row gap-4 items-center">
                                 <div class="text-[11px] font-bold text-slate-400 px-2 italic w-1/4 text-center">新しい名前</div>
                                 <input id="ui-merger-target" type="text" placeholder="例: 浜松市中央区" class="flex-1 px-4 py-3 rounded-xl border-2 border-slate-900/5 bg-white focus:border-indigo-500 outline-none text-sm font-black shadow-sm transition-all">
-                                <button onclick="appUIExecuteMerger()" class="px-10 py-3 bg-slate-900 hover:bg-black text-white text-xs font-black rounded-xl transition-all shadow-lg active:scale-95 text-center">合併・改称を実行</button>
+                                <button onclick="appUIExecuteMerger()" class="px-10 py-3 bg-slate-900 hover:bg-black text-white text-xs font-black rounded-xl transition-all shadow-lg active:scale-95">合併・改称を実行</button>
                             </div>
                         </div>
                     </div>
@@ -431,7 +429,7 @@
             const newIdx = appState.config.prefDenominators.length;
             const last = appState.config.prefDenominators[newIdx - 1] || DEFAULT_PREF_DATA;
             appState.config.prefDenominators.push({...last});
-            appUIOpenSettings(); // 設定画面のみ再描画
+            appOpenSettings(); // 再描画
         }
 
         function appInit() {
@@ -861,15 +859,23 @@
             // 各グループ（自治体）ごとに1枚のカードを出す
             uniqueCities.forEach(cityName => {
                 const rc = cityGroups[cityName].sort((a,b) => a.ts - b.ts);
-                const hasCurrent = rc.some(r => r.info.label !== "PAST" && r.info.label !== "FUTURE");
-                const hasPast = rc.some(r => r.info.label === "PAST");
+                
+                // 「未来の訪問（FUTURE）」を除いた、現在周期までの記録のみを抽出
+                const currentOrPastRecs = rc.filter(r => r.info.label !== "FUTURE");
+                
+                // 未来にしか訪問していない（または未訪問）の場合は表示しない
+                if (currentOrPastRecs.length === 0) return;
+
+                const hasCurrent = currentOrPastRecs.some(r => r.info.label !== "PAST");
+                const hasPast = currentOrPastRecs.some(r => r.info.label === "PAST");
                 
                 if (!appState.showPastCityGrid && !hasCurrent) return;
 
-                const displayRec = [...rc].sort((a,b)=>b.ts - a.ts)[0]; // 最新を表示
+                // 表示対象は「現在までの記録」の中での最新
+                const displayRec = [...currentOrPastRecs].sort((a,b)=>b.ts - a.ts)[0];
                 const info = displayRec.info;
                 
-                // 「過去訪問アリ」の表示（今周期も訪問しており、かつ過去の記録がある場合）
+                // 「過去訪問アリ」の表示
                 let pastInfoHtml = "";
                 if (hasCurrent && hasPast) {
                     const oldestPast = rc.filter(r => r.info.label === "PAST").sort((a,b)=>a.ts - b.ts)[0];
@@ -1252,7 +1258,8 @@
             const switcher = document.getElementById('cfg-cycle-switcher');
             if (switcher) {
                 switcher.innerHTML = '';
-                for (let i = 0; i < 4; i++) {
+                const cycleCount = appState.config.prefDenominators.length;
+                for (let i = 0; i < cycleCount; i++) {
                     const btn = document.createElement('button');
                     btn.className = `px-3 py-1.5 text-[11px] font-black rounded-lg transition-all ${appState.editingCycle === i ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 bg-slate-100'}`;
                     btn.textContent = `第${i + 1}周期`;
