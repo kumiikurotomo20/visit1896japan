@@ -846,12 +846,13 @@
                 if (!appState.showPastCityGrid && !hasCurrent) return;
 
                 const displayRec = rc[0]; // 最新の記録を代表とする
+                const info = displayRec.info;
                 const div = document.createElement('div');
-                div.className = "card-city p-5 animate-slide-up flex flex-col items-center text-center";
+                div.className = `card-city p-5 animate-slide-up flex flex-col items-center text-center bg-white shadow-sm border-2 ${info.border}`;
                 div.innerHTML = `
                     <div class="text-[11px] font-black text-slate-800 mb-1 leading-tight h-8 flex items-center justify-center">${cityName}</div>
                     <div class="text-[9px] font-bold text-slate-400 mb-3">${displayRec.date}</div>
-                    <span class="label-badge ${displayRec.info.class}">${displayRec.info.label}</span>
+                    <span class="label-badge ${info.class}">${info.label}</span>
                 `;
                 ctn.appendChild(div);
             });
@@ -938,7 +939,12 @@
                     let gunName = feature.properties.N03_003 || feature.properties.gun_name || "";
                     if (gunName === null || gunName === "null") gunName = "";
                     if (cityName === null || cityName === "null") cityName = "";
-                    let fullName = gunName + cityName;
+                    
+                    // 政令指定都市や郡名の重複を防止
+                    let fullName = cityName;
+                    if (gunName && !cityName.startsWith(gunName)) {
+                        fullName = gunName + cityName;
+                    }
                     
                     // 統合ロジックの適用（現在の周期基準）
                     const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
