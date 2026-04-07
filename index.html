@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Map Data (Converted to JS for Local Execution) -->
-    <script src="japan_map_data.js"></script>
+    <script src="japan_map_data.js" defer></script>
     <!-- Firebase SDK (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore-compat.js"></script>
@@ -120,6 +120,16 @@
 
     <main class="max-w-[1400px] mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div class="lg:col-span-3 space-y-6">
+            <!-- Search / Inquiry Card -->
+            <div class="card p-6 border-b-8 border-emerald-400">
+                <h3 class="font-black text-[10px] mb-4 text-slate-400 tracking-widest uppercase">City Search / Inquiry</h3>
+                <div class="relative">
+                    <input type="text" id="ui-search-input" oninput="appSearchCity()" placeholder="市区町村を検索..."
+                        class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20">
+                    <div id="ui-search-results" class="absolute left-0 right-0 mt-2 bg-white border rounded-[24px] shadow-2xl z-50 max-h-[400px] overflow-y-auto hidden scroll-hide divide-y divide-slate-50"></div>
+                </div>
+            </div>
+
             <div class="card p-6 border-b-8 border-indigo-600">
                 <h3 class="font-black text-[10px] mb-6 text-slate-400 tracking-widest uppercase">Record Entry</h3>
                 <div class="space-y-4">
@@ -448,6 +458,22 @@
         }
 
         function appRenderAll(preventFirebaseSave = false) {
+            // Calculate unique rank (Across all history)
+            const allSorted = [...appState.records].sort((a,b) => {
+                const da = new Date(a.date).getTime();
+                const db = new Date(b.date).getTime();
+                return da !== db ? da - db : a.id - b.id;
+            });
+            const rankMap = {};
+            let currentRank = 1;
+            allSorted.forEach(r => {
+                const key = `${r.pref}-${r.city}`;
+                if (!(key in rankMap)) {
+                    rankMap[key] = currentRank++;
+                }
+            });
+            appState.rankMap = rankMap;
+
             appState.enrichedRecords = appState.records.map(r => ({
                 ...r,
                 ts: new Date(r.date).getTime(),
@@ -804,12 +830,13 @@
                 const d = a.ts - b.ts;
                 return d !== 0 ? d : a.id - b.id;
             }); // 古い順、同日は登録順
-            let displayIdx = 1;
+            
+            let hidePastCount = 1; // 「過去分を隠す」時のカウンタ
             sorted.forEach((r) => {
                 const info = r.info;
 
+                // フィルタリング
                 if (!appState.showPastHistory && info.label === "PAST") return;
-
                 if (info.label === "PAST") {
                     const hasCurrentVisit = appState.enrichedRecords.some(
                         x => x.pref === r.pref && x.city === r.city && x.info.label !== "PAST" && x.info.label !== "FUTURE"
@@ -834,11 +861,27 @@
                     }
                 }
 
+                // 番号 (No.) の採番ロジック
                 let rankStr = "";
-                let rankClass = "";
-                if (info.label !== "PAST") {
-                    rankStr = String(displayIdx++);
-                    rankClass = "text-black font-black";
+                let rankClass = "text-black font-black";
+                const key = `${r.pref}-${r.city}`;
+                const rank = appState.rankMap[key];
+
+                if (appState.showPastHistory) {
+                    // 「過去分を表示」の時
+                    const hasPast = appState.enrichedRecords.some(x => x.pref === r.pref && x.city === r.city && x.info.label === "PAST");
+                    const hasCurrent = appState.enrichedRecords.some(x => x.pref === r.pref && x.city === r.city && x.info.label !== "PAST" && x.info.label !== "FUTURE");
+                    const isDuplicate = hasPast && hasCurrent;
+
+                    if (isDuplicate) {
+                        rankStr = "-"; // 重複訪問時は何も表示しない（またはハイフン）
+                        rankClass = "text-slate-200";
+                    } else {
+                        rankStr = `#${rank}`;
+                    }
+                } else {
+                    // 「過去分を隠す」の時
+                    rankStr = `#${hidePastCount++}`;
                 }
 
                 const tr = document.createElement('tr');
@@ -854,6 +897,65 @@
             </td>`;
                 tb.appendChild(tr);
             });
+        }
+
+        // --- Search Functionality ---
+        function appSearchCity() {
+            const query = document.getElementById('ui-search-input').value.trim();
+            const resultsCtn = document.getElementById('ui-search-results');
+            if (!query) {
+                resultsCtn.classList.add('hidden');
+                return;
+            }
+
+            // Group by city to find the most representative record
+            const cityInfoMap = {};
+            appState.enrichedRecords.forEach(r => {
+                const key = `${r.pref}-${r.city}`;
+                if (!cityInfoMap[key] || r.ts > cityInfoMap[key].ts) {
+                    cityInfoMap[key] = r;
+                }
+            });
+
+            const matches = Object.values(cityInfoMap).filter(c => 
+                c.city.includes(query) || c.pref.includes(query)
+            ).sort((a,b) => a.ts - b.ts).slice(0, 20);
+
+            if (matches.length === 0) {
+                resultsCtn.innerHTML = '<div class="p-6 text-xs font-bold text-slate-400 text-center">該当する市区町村が見つかりません</div>';
+            } else {
+                resultsCtn.innerHTML = matches.map(m => {
+                    const rank = appState.rankMap[`${m.pref}-${m.city}`];
+                    return `
+                    <div onclick="appGoToCity('${m.pref}', '${m.city}')" class="p-4 hover:bg-slate-50 cursor-pointer transition-colors group">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">${m.pref}</div>
+                                <div class="text-sm font-black text-slate-800 group-hover:text-emerald-500 transition-colors">${m.city}</div>
+                            </div>
+                            <div class="text-[10px] font-mono font-black text-slate-200">#${rank}</div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-2">
+                             <span class="label-badge ${m.info.class} scale-75 origin-left" style="padding: 2px 8px; font-size: 9px;">${m.info.label}</span>
+                             <span class="text-[10px] font-bold text-slate-400">${m.date}</span>
+                        </div>
+                    </div>
+                `}).join('');
+            }
+            resultsCtn.classList.remove('hidden');
+        }
+
+        function appGoToCity(pref, city) {
+            appState.currentViewPref = pref;
+            document.getElementById('ui-search-input').value = "";
+            document.getElementById('ui-search-results').classList.add('hidden');
+            appRenderAll();
+            
+            // Auto close mobile keyboard or blur
+            document.activeElement.blur();
+
+            // Smooth scroll to the city grid?
+            document.getElementById('ui-city-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function appSaveRecord() {
