@@ -858,30 +858,37 @@
 
             // 各グループ（自治体）ごとに1枚のカードを出す
             uniqueCities.forEach(cityName => {
-                const rc = cityGroups[cityName].sort((a,b) => a.ts - b.ts);
+                const rc = cityGroups[cityName].sort((a,b) => a.ts - b.ts); // 古い順
                 
-                // 「未来の訪問（FUTURE）」を除いた、現在周期までの記録のみを抽出
-                const currentOrPastRecs = rc.filter(r => r.info.label !== "FUTURE");
-                
-                // 未来にしか訪問していない（または未訪問）の場合は表示しない
-                if (currentOrPastRecs.length === 0) return;
+                // 周期分類
+                const currentRecs = rc.filter(r => r.info.label !== "PAST" && r.info.label !== "FUTURE");
+                const pastRecs = rc.filter(r => r.info.label === "PAST");
+                const futureRecs = rc.filter(r => r.info.label === "FUTURE");
 
-                const hasCurrent = currentOrPastRecs.some(r => r.info.label !== "PAST");
-                const hasPast = currentOrPastRecs.some(r => r.info.label === "PAST");
-                
-                if (!appState.showPastCityGrid && !hasCurrent) return;
+                // 未来にしか訪問していない（または未訪問）の場合は表示しない (Rule 3+)
+                if (currentRecs.length === 0 && pastRecs.length === 0) return;
 
-                // 表示対象は「現在までの記録」の中での最新
-                const displayRec = [...currentOrPastRecs].sort((a,b)=>b.ts - a.ts)[0];
+                // 表示するレコードの選定ロジック
+                let displayRec;
+                if (currentRecs.length > 0) {
+                    // 今周期の訪問がある場合は、今周期の中での最新を表示 (Rule 1)
+                    displayRec = [...currentRecs].sort((a,b)=>b.ts - a.ts)[0];
+                } else {
+                    // 今周期になければ、最過去の記録を表示 (Rule 1-Earnier, Rule 2, Rule 3-Past)
+                    displayRec = pastRecs[0];
+                }
+
+                if (!appState.showPastCityGrid && currentRecs.length === 0) return;
+
                 const info = displayRec.info;
+                const hasCurrent = currentRecs.length > 0;
+                const hasPast = pastRecs.length > 0;
                 
-                // 「過去訪問アリ」の表示
+                // 「過去訪問アリ」の表示（今周期に訪問があり、かつ過去にも訪問がある場合のみ）
                 let pastInfoHtml = "";
                 if (hasCurrent && hasPast) {
-                    const oldestPast = rc.filter(r => r.info.label === "PAST").sort((a,b)=>a.ts - b.ts)[0];
-                    if (oldestPast) {
-                        pastInfoHtml = `<div class="mt-2 text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 italic">過去訪問アリ ${oldestPast.date}</div>`;
-                    }
+                    const oldestPast = pastRecs[0];
+                    pastInfoHtml = `<div class="mt-2 text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 italic">過去訪問アリ ${oldestPast.date}</div>`;
                 }
 
                 const div = document.createElement('div');
@@ -972,13 +979,12 @@
             
             leafletGeoJsonLayer = L.geoJSON(prefFeatures, {
                 style: function (feature) {
-                    let featurePref = getNormalizedPref(feature.properties.N03_001);
                     let cityName = (feature.properties.N03_004 || feature.properties.city_name || feature.properties.name || "").trim();
                     let gunName = (feature.properties.N03_003 || feature.properties.gun_name || "").trim();
                     if (gunName === null || gunName === "null") gunName = "";
                     if (cityName === null || cityName === "null") cityName = "";
                     
-                    // 重複防止
+                    // 重複防止（名古屋市 + 名古屋市北区 対策）
                     let fullName = cityName;
                     if (gunName && !cityName.startsWith(gunName)) {
                         fullName = gunName + cityName;
@@ -1034,11 +1040,16 @@
                 },
                 onEachFeature: function (feature, layer) {
                     let featurePref = getNormalizedPref(feature.properties.N03_001);
-                    let cityName = feature.properties.N03_004 || "";
-                    let gunName = feature.properties.N03_003 || "";
+                    let cityName = (feature.properties.N03_004 || "").trim();
+                    let gunName = (feature.properties.N03_003 || "").trim();
                     if (gunName === null || gunName === "null") gunName = "";
                     if (cityName === null || cityName === "null") cityName = "";
-                    let fullName = gunName + cityName;
+                    
+                    // 重複防止（ここが修正漏れ箇所でした）
+                    let fullName = cityName;
+                    if (gunName && !cityName.startsWith(gunName)) {
+                        fullName = gunName + cityName;
+                    }
                     
                     const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
                     for(const m of activeMergers) {
