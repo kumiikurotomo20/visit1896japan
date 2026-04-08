@@ -1091,7 +1091,7 @@
                     }
 
                     const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
-                    let matchedRec = cityRecs.find(r => r.city === fullName);
+                    let matchedRec = cityRecs.find(r => r.city === fullName || r.city === cityName);
 
                     let fillColor = "#f1f5f9";
                     let weight = 1;
@@ -1099,7 +1099,7 @@
                     let opacity = 0.8;
 
                     if (matchedRec) {
-                        const rc = cityRecs.filter(r => r.city === fullName).sort((a, b) => b.ts - a.ts);
+                        const rc = cityRecs.filter(r => r.city === matchedRec.city).sort((a, b) => b.ts - a.ts);
                         const latestInfo = rc[0].info;
                         const l = latestInfo.label;
 
@@ -1153,7 +1153,8 @@
                     let tooltipContent = `<div class="font-sans font-black text-slate-800 text-[12px]">${featurePref} ${fullName}</div>`;
 
                     const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
-                    let rc = cityRecs.filter(r => r.city === fullName).sort((a, b) => b.ts - a.ts);
+                    let matchedRec = cityRecs.find(r => r.city === fullName || r.city === cityName);
+                    let rc = matchedRec ? cityRecs.filter(r => r.city === matchedRec.city).sort((a, b) => b.ts - a.ts) : [];
 
                     if (rc.length > 0) {
                         const latest = rc[0];
