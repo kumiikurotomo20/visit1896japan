@@ -1036,13 +1036,13 @@
 
             if (!globalGeojsonData) {
                 // 読み込み中チェックをより確実にする
-                if (window.japanGeoJson) {
+                if (window.japanGeoJson && window.japanGeoJson.features) {
                     globalGeojsonData = window.japanGeoJson;
                 } else {
                     loader.textContent = "🗺️ 地図データを展開しています... (初回のみ)";
                     loader.style.display = 'flex';
-                    // 少し待ってからリトライ (スマホ対策)
-                    setTimeout(() => appRenderMap(isNational), 500);
+                    // 少し待ってからリトライ (スマホ対策: データの完全な読み込みを待つ)
+                    setTimeout(() => appRenderMap(isNational), 800);
                     return;
                 }
             }
