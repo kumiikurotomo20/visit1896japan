@@ -137,11 +137,7 @@
                 <h1 class="font-black text-xl tracking-tighter">市区町村訪問マスター <span
                         class="text-xs text-indigo-500 ml-2">1896cwtv</span></h1>
             </div>
-            <div class="flex flex-wrap justify-center gap-2" id="header-cycle-switcher"></div>
-            <div class="flex items-center gap-3">
-                <button onclick="appOpenSettings()"
-                    class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all font-black text-sm">⚙️設定</button>
-            </div>
+            <div class="flex flex-wrap items-center justify-center gap-2" id="header-cycle-switcher"></div>
         </div>
     </header>
 
@@ -312,8 +308,8 @@
     <div id="modal-settings"
         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md"
         style="display:none;">
-        <div class="bg-white rounded-[40px] w-full max-w-4xl p-10 max-h-[90vh] flex flex-col overflow-hidden">
-            <div class="flex justify-between items-center mb-8">
+        <div class="bg-white rounded-[40px] w-full max-w-4xl p-10 max-h-[90vh] overflow-y-auto scroll-hide">
+            <div class="flex justify-between items-center mb-10">
                 <h3 class="font-black text-3xl tracking-tighter italic">⚙️ System Settings</h3>
                 <button onclick="document.getElementById('modal-settings').style.display='none'"
                     class="text-slate-300 hover:text-slate-900 text-2xl">✕</button>
@@ -343,7 +339,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto pr-4 scroll-hide">
+            <div class="pr-4">
                 <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-6">▼
                     都道府県別の詳細分母（書き換えると総分母に反映されます）</p>
                 <div id="cfg-pref-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-14"></div>
@@ -816,6 +812,12 @@
                 btn.onclick = () => { appState.activeCycle = i; appRenderAll(); };
                 ctn.appendChild(btn);
             }
+            // 右端に設定ボタンを⚙️アイコンとして追加
+            const setBtn = document.createElement('button');
+            setBtn.className = "p-3 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-2xl transition-all shadow-sm active:scale-95 ml-2";
+            setBtn.innerHTML = "⚙️";
+            setBtn.onclick = appOpenSettings;
+            ctn.appendChild(setBtn);
         }
 
         function appRenderStats() {
@@ -1033,19 +1035,14 @@
             const loader = document.getElementById('ui-map-loading');
 
             if (!globalGeojsonData) {
-                loader.textContent = "🗺️ 全1892市区町村の地図データを展開しています... (初回のみ)";
-                loader.className = "font-black text-indigo-500 text-[14px] animate-pulse absolute inset-0 flex items-center justify-center bg-white/90 z-20";
-                loader.style.display = 'flex';
-
-                try {
-                    if (!window.japanGeoJson) {
-                        throw new Error("japanGeoJson was not found in global window object");
-                    }
+                // 読み込み中チェックをより確実にする
+                if (window.japanGeoJson) {
                     globalGeojsonData = window.japanGeoJson;
-                } catch (e) {
-                    console.error("Map Load Error", e);
-                    loader.textContent = "⚠️ japan_map_data.js が正しく読み込まれていません。";
-                    loader.className = "font-black text-rose-500 text-xs absolute inset-0 flex items-center justify-center bg-white z-20 p-4 text-center";
+                } else {
+                    loader.textContent = "🗺️ 地図データを展開しています... (初回のみ)";
+                    loader.style.display = 'flex';
+                    // 少し待ってからリトライ (スマホ対策)
+                    setTimeout(() => appRenderMap(isNational), 500);
                     return;
                 }
             }
