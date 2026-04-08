@@ -1084,14 +1084,19 @@
                     // 統合ロジックの適用（現在の周期基準）
                     const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
                     for (const m of activeMergers) {
-                        if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName))) {
+                        if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName || cityName.endsWith(s.city)))) {
                             fullName = m.targetCity;
                             break;
                         }
                     }
 
                     const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
-                    let matchedRec = cityRecs.find(r => r.city === fullName || r.city === cityName);
+                    // 照合ロジックの強化：完全一致、または地図側の市区町村名（郡なし）と一致するか
+                    let matchedRec = cityRecs.find(r => 
+                        r.city === fullName || 
+                        r.city === cityName || 
+                        (fullName.includes(r.city) && r.city.length > 1)
+                    );
 
                     let fillColor = "#f1f5f9";
                     let weight = 1;
@@ -1144,7 +1149,7 @@
 
                     const activeMergers = appState.mergers.filter(m => appState.activeCycle >= m.effectiveCycle);
                     for (const m of activeMergers) {
-                        if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName))) {
+                        if (m.sources.some(s => s.pref === featurePref && (s.city === fullName || s.city === cityName || cityName.endsWith(s.city)))) {
                             fullName = m.targetCity;
                             break;
                         }
@@ -1153,7 +1158,12 @@
                     let tooltipContent = `<div class="font-sans font-black text-slate-800 text-[12px]">${featurePref} ${fullName}</div>`;
 
                     const cityRecs = appState.enrichedRecords.filter(r => r.pref === featurePref && r.info.label !== "FUTURE");
-                    let matchedRec = cityRecs.find(r => r.city === fullName || r.city === cityName);
+                    // ツールチップ側の照合も同様に強化
+                    let matchedRec = cityRecs.find(r => 
+                        r.city === fullName || 
+                        r.city === cityName || 
+                        (fullName.includes(r.city) && r.city.length > 1)
+                    );
                     let rc = matchedRec ? cityRecs.filter(r => r.city === matchedRec.city).sort((a, b) => b.ts - a.ts) : [];
 
                     if (rc.length > 0) {
