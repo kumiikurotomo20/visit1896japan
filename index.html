@@ -581,7 +581,14 @@
 
         // 初期データ
         const DEFAULT_PREF_DATA = { "北海道": 188, "青森県": 40, "岩手県": 33, "宮城県": 39, "秋田県": 25, "山形県": 35, "福島県": 59, "茨城県": 44, "栃木県": 25, "群馬県": 35, "埼玉県": 72, "千葉県": 59, "東京都": 62, "神奈川県": 58, "新潟県": 37, "富山県": 15, "石川県": 19, "福井県": 17, "山梨県": 27, "長野県": 77, "岐阜県": 42, "静岡県": 43, "愛知県": 69, "三重県": 29, "滋賀県": 19, "京都府": 36, "大阪府": 72, "兵庫県": 49, "奈良県": 39, "和歌山県": 30, "鳥取県": 19, "島根県": 19, "岡山県": 30, "広島県": 30, "山口県": 19, "徳島県": 24, "香川県": 17, "愛媛県": 20, "高知県": 34, "福岡県": 72, "佐賀県": 20, "長崎県": 21, "熊本県": 49, "大分県": 18, "宮崎県": 26, "鹿児島県": 43, "沖縄県": 41 };
+        // --- Constants & Config ---
         const PREFS = Object.keys(DEFAULT_PREF_DATA);
+        const CITY_TYPES_CONFIG = {
+            "市": { color: "text-rose-500", totalColor: "text-rose-600", bg: "bg-rose-50/10" },
+            "区": { color: "text-amber-400", totalColor: "text-amber-500", bg: "bg-amber-50/10" },
+            "町": { color: "text-emerald-500", totalColor: "text-emerald-600", bg: "bg-emerald-50/10" },
+            "村": { color: "text-indigo-500", totalColor: "text-indigo-600", bg: "bg-indigo-50/10" }
+        };
         const PREF_CODES = { "北海道": "01", "青森県": "02", "岩手県": "03", "宮城県": "04", "秋田県": "05", "山形県": "06", "福島県": "07", "茨城県": "08", "栃木県": "09", "群馬県": "10", "埼玉県": "11", "千葉県": "12", "東京都": "13", "神奈川県": "14", "新潟県": "15", "富山県": "16", "石川県": "17", "福井県": "18", "山梨県": "19", "長野県": "20", "岐阜県": "21", "静岡県": "22", "愛知県": "23", "三重県": "24", "滋賀県": "25", "京都府": "26", "大阪府": "27", "兵庫県": "28", "奈良県": "29", "和歌山県": "30", "鳥取県": "31", "島根県": "32", "岡山県": "33", "広島県": "34", "山口県": "35", "徳島県": "36", "香川県": "37", "愛媛県": "38", "高知県": "39", "福岡県": "40", "佐賀県": "41", "長崎県": "42", "熊本県": "43", "大分県": "44", "宮崎県": "45", "鹿児島県": "46", "沖縄県": "47" };
 
         let appState = {
@@ -1623,6 +1630,18 @@
             return totalRowHtml + cumulativeRowHtml;
         }
 
+        /** 市・区・町・村別のセルHTML生成ヘルパー */
+        function renderTypeCells(counts, types, isMain = false) {
+            return `<div class="grid grid-cols-2 gap-x-2 text-[9px] font-black leading-tight">
+                ${types.map(k => {
+                    const cfg = CITY_TYPES_CONFIG[k];
+                    const val = counts[k] || 0;
+                    const colorClass = val > 0 ? (isMain ? cfg.totalColor : cfg.color) : 'text-slate-200';
+                    return `<span class="${colorClass}">${k}:${val}</span>`;
+                }).join('')}
+            </div>`;
+        }
+
         /** 市・区・町・村別 訪問統計テーブルの描画 */
         function appRenderTypeStatsTable() {
             const head = document.getElementById('ui-type-stats-head');
@@ -1632,7 +1651,9 @@
             const cycleCount = appState.config.prefDenominators.length;
             const labels = ["1年目前半", "1年目後半", "2年目前半", "2年目後半", "3年目前半", "3年目後半", "4年目前半", "4年目後半"];
             const baseStart = appState.config.baseStart;
+            const types = Object.keys(CITY_TYPES_CONFIG);
 
+            // ヘッダー
             head.innerHTML = `<th class="p-2 text-[11px] font-black text-slate-400 text-left bg-slate-50/50 rounded-l-2xl w-24">期間</th>` + 
                 Array.from({length: cycleCount}, (_, i) => `<th class="p-4 text-[11px] font-black text-slate-400 bg-slate-50/50">第${i+1}</th>`).join('') +
                 `<th class="p-4 text-[11px] font-black text-indigo-500 bg-indigo-50/50 rounded-r-2xl">期間計</th>`;
@@ -1654,26 +1675,16 @@
             body.innerHTML = labels.map((label, pIdx) => {
                 const rowTotals = { "市": 0, "区": 0, "町": 0, "村": 0 };
                 const cells = matrix[pIdx].map((counts, cIdx) => {
-                    Object.keys(counts).forEach(k => {
+                    types.forEach(k => {
                         rowTotals[k] += counts[k];
                         cycleTotals[cIdx][k] += counts[k];
                         grandTotals[k] += counts[k];
                     });
-                    return `<td class="p-2 border-b border-slate-50">
-                        <div class="grid grid-cols-2 gap-x-2 text-[9px] font-black tracking-tighter leading-tight">
-                            <span class="${counts['市']>0?'text-rose-500':'text-slate-200'}">市:${counts['市']}</span>
-                            <span class="${counts['区']>0?'text-amber-400':'text-slate-200'}">区:${counts['区']}</span>
-                            <span class="${counts['町']>0?'text-emerald-500':'text-slate-200'}">町:${counts['町']}</span>
-                            <span class="${counts['村']>0?'text-indigo-500':'text-slate-200'}">村:${counts['村']}</span>
-                        </div>
-                    </td>`;
+                    return `<td class="p-2 border-b border-slate-50">${renderTypeCells(counts, types)}</td>`;
                 }).join('');
 
                 const rowTotalHtml = `<td class="p-2 bg-indigo-50/10 border-b border-indigo-50">
-                    <div class="grid grid-cols-2 gap-x-2 text-[9px] font-black leading-tight">
-                        <span class="text-rose-400">市:${rowTotals['市']}</span><span class="text-amber-400">区:${rowTotals['区']}</span>
-                        <span class="text-emerald-400">町:${rowTotals['町']}</span><span class="text-indigo-400">村:${rowTotals['村']}</span>
-                    </div>
+                    ${renderTypeCells(rowTotals, types, true)}
                 </td>`;
 
                 return `<tr class="hover:bg-slate-50 transition-all">
@@ -1681,28 +1692,25 @@
                     ${cells}${rowTotalHtml}</tr>`;
             }).join('');
 
-            // 合計行の追加
+            // 合計行
             let footerHtml = `<tr class="bg-indigo-50/30">
-                <td class="p-4 text-left font-black text-indigo-600 text-[12px] rounded-bl-2xl">合計</td>`;
-            
+                <td class="p-4 text-left font-black text-indigo-600 text-[12px]">合計</td>`;
             for (let i = 0; i < cycleCount; i++) {
-                const t = cycleTotals[i];
-                footerHtml += `<td class="p-2">
-                    <div class="grid grid-cols-2 gap-x-2 text-[9px] font-black leading-tight">
-                        <span class="text-rose-500">市:${t['市']}</span><span class="text-amber-400">区:${t['区']}</span>
-                        <span class="text-emerald-500">町:${t['町']}</span><span class="text-indigo-500">村:${t['村']}</span>
-                    </div>
-                </td>`;
+                footerHtml += `<td class="p-2">${renderTypeCells(cycleTotals[i], types, true)}</td>`;
             }
-
-            footerHtml += `<td class="p-2 bg-indigo-100/50 rounded-br-2xl">
-                <div class="grid grid-cols-2 gap-x-2 text-[9px] font-black leading-tight">
-                    <span class="text-rose-600">市:${grandTotals['市']}</span><span class="text-amber-500">区:${grandTotals['区']}</span>
-                    <span class="text-emerald-600">町:${grandTotals['町']}</span><span class="text-indigo-600">村:${grandTotals['村']}</span>
-                </div>
-            </td></tr>`;
+            footerHtml += `<td class="p-2 bg-indigo-100/50">${renderTypeCells(grandTotals, types, true)}</td></tr>`;
             
-            body.innerHTML += footerHtml;
+            // 累計行
+            let cumulativeRowHtml = `<tr class="bg-emerald-50/30">
+                <td class="p-4 text-left font-black text-emerald-600 text-[12px] rounded-bl-2xl">累計</td>`;
+            const cumulative = { "市": 0, "区": 0, "町": 0, "村": 0 };
+            for (let i = 0; i < cycleCount; i++) {
+                types.forEach(k => cumulative[k] += cycleTotals[i][k]);
+                cumulativeRowHtml += `<td class="p-2">${renderTypeCells(cumulative, types, true)}</td>`;
+            }
+            cumulativeRowHtml += `<td class="p-2 bg-emerald-600 rounded-br-2xl shadow-inner">${renderTypeCells(grandTotals, types, true)}</td></tr>`;
+
+            body.innerHTML += footerHtml + cumulativeRowHtml;
         }
 
         /** カスタム項目テーブルの描画 */
