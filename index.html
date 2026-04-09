@@ -253,18 +253,6 @@
                         <tbody id="ui-stats-body"></tbody>
                     </table>
                 </div>
-            <!-- 市区町村種別 訪問統計 -->
-            <div class="card p-8 overflow-hidden border-b-8 border-indigo-200">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-black text-xs text-indigo-400 tracking-widest uppercase italic">🏙️ 市・区・町・村別 訪問統計</h3>
-                    <span class="text-[9px] font-bold text-slate-400">※末尾文字（市/区/町/村）による分類集計</span>
-                </div>
-                <div class="overflow-x-auto scroll-hide">
-                    <table class="w-full border-separate border-spacing-1">
-                        <thead><tr id="ui-type-stats-head"></tr></thead>
-                        <tbody id="ui-type-stats-body"></tbody>
-                    </table>
-                </div>
             </div>
 
             <!-- カスタム項目テーブル -->
@@ -835,7 +823,6 @@
             appRenderCityGrid();
             appRenderHistory();
             appRenderStatsTable();
-            appRenderTypeStatsTable();
             appRenderManualTable();
 
             localStorage.setItem('visit_v95_recs', JSON.stringify(appState.records));
@@ -1544,7 +1531,29 @@
             return Object.values(firsts);
         }
 
-        /** 統計テーブル（周期別・期間別）の描画 */
+        /** 総合統計セルのHTML生成 */
+        function renderUnifiedCell(total, counts, isDark = false) {
+            const types = Object.keys(CITY_TYPES_CONFIG);
+            const totalColor = isDark ? 'text-white' : (total > 0 ? 'text-slate-900' : 'text-slate-200');
+            
+            let breakdownHtml = `<div class="grid grid-cols-2 gap-x-1 gap-y-0 text-[8px] font-black leading-tight opacity-70">`;
+            types.forEach(k => {
+                const c = counts[k] || 0;
+                const cfg = CITY_TYPES_CONFIG[k];
+                let colorClass = c > 0 ? (isDark ? 'text-white' : cfg.color) : (isDark ? 'text-white/20' : 'text-slate-100');
+                breakdownHtml += `<span class="${colorClass}">${k.charAt(0)}:${c}</span>`;
+            });
+            breakdownHtml += `</div>`;
+
+            return `
+                <div class="flex items-center justify-between gap-1 w-full">
+                    <span class="text-lg font-black italic tracking-tighter ${totalColor}">${total}</span>
+                    ${breakdownHtml}
+                </div>
+            `;
+        }
+
+        /** 周期別・期間別統計テーブルの描画（統合版） */
         function appRenderStatsTable() {
             const head = document.getElementById('ui-stats-head');
             const body = document.getElementById('ui-stats-body');
@@ -1553,166 +1562,81 @@
             const cycleCount = appState.config.prefDenominators.length;
             const labels = ["1年目前半", "1年目後半", "2年目前半", "2年目後半", "3年目前半", "3年目後半", "4年目前半", "4年目後半"];
             const baseStart = appState.config.baseStart;
-            
-            // ヘッダー生成
-            let headHtml = `<th class="p-4 text-[11px] font-black text-slate-400 text-left bg-slate-50/50 rounded-l-2xl">期間</th>`;
-            for (let i = 0; i < cycleCount; i++) {
-                headHtml += `<th class="p-4 text-[11px] font-black text-slate-400 bg-slate-50/50">第${i + 1}</th>`;
-            }
-            headHtml += `<th class="p-4 text-[11px] font-black text-indigo-500 bg-indigo-50/50">合計</th>`;
-            headHtml += `<th class="p-4 text-[11px] font-black text-emerald-500 bg-emerald-50/50 rounded-r-2xl">累計</th>`;
-            head.innerHTML = headHtml;
-
-            // マトリックス初期化 & 集計（初訪問のみ対象）
-            const matrix = Array.from({ length: 8 }, () => Array(cycleCount).fill(0));
-            const firstVisits = getFirstVisits(appState.records);
-
-            firstVisits.forEach(v => {
-                const { cycle, period } = dateUtils.getCycleAndPeriod(v.date, baseStart);
-                if (cycle >= 0 && cycle < cycleCount && period >= 0 && period < 8) {
-                    matrix[period][cycle]++;
-                }
-            });
-
-            // テーブル行生成
-            let bodyHtml = "";
-            let verticalCumulativeTotal = 0;
-            const cycleSums = Array(cycleCount).fill(0);
-
-            labels.forEach((label, pIdx) => {
-                let rowTotal = 0;
-                let rowHtml = `<tr class="group hover:bg-slate-50/80 transition-all">
-                    <td class="p-4 text-left border-b border-slate-50">
-                        <span class="text-[12px] font-black text-slate-500 group-hover:text-indigo-600 transition-colors">${label}</span>
-                    </td>`;
-                
-                for (let cIdx = 0; cIdx < cycleCount; cIdx++) {
-                    const count = matrix[pIdx][cIdx];
-                    rowTotal += count;
-                    cycleSums[cIdx] += count;
-                    rowHtml += `<td class="p-4 border-b border-slate-50">
-                        <span class="text-sm font-black ${count > 0 ? 'text-slate-900 group-hover:scale-110' : 'text-slate-200'} inline-block transition-transform">${count}</span>
-                    </td>`;
-                }
-                
-                verticalCumulativeTotal += rowTotal;
-                rowHtml += `<td class="p-4 bg-indigo-50/10 border-b border-indigo-50"><span class="text-sm font-black text-indigo-500">${rowTotal}</span></td>`;
-                rowHtml += `<td class="p-4 bg-emerald-50/10 border-b border-emerald-50"><span class="text-sm font-black text-emerald-500">${verticalCumulativeTotal}</span></td></tr>`;
-                
-                bodyHtml += rowHtml;
-            });
-
-            // 合計行・累計行（フッター）
-            bodyHtml += renderStatsFooter(cycleCount, cycleSums);
-            body.innerHTML = bodyHtml;
-        }
-
-        /** 統計テーブルのフッター（合計・累計）HTML生成 */
-        function renderStatsFooter(cycleCount, cycleSums) {
-            let totalOverall = 0;
-            let totalRowHtml = `<tr class="bg-indigo-50/30"><td class="p-4 text-left font-black text-indigo-600 text-[12px]">合計</td>`;
-            for (let i = 0; i < cycleCount; i++) {
-                totalOverall += cycleSums[i];
-                totalRowHtml += `<td class="p-4 text-sm font-black text-indigo-600">${cycleSums[i]}</td>`;
-            }
-            totalOverall = Math.round(totalOverall); // Ensure integer
-            totalRowHtml += `<td class="p-4 text-sm font-black text-indigo-800 bg-indigo-100/50">${totalOverall}</td><td class="p-4 text-sm font-black text-slate-400 bg-emerald-100/20">-</td></tr>`;
-
-            let cycleCum = 0;
-            let cumulativeRowHtml = `<tr class="bg-emerald-50/30"><td class="p-4 text-left font-black text-emerald-600 text-[12px] rounded-bl-2xl">累計</td>`;
-            for (let i = 0; i < cycleCount; i++) {
-                cycleCum += cycleSums[i];
-                cumulativeRowHtml += `<td class="p-4 text-sm font-black text-emerald-600">${cycleCum}</td>`;
-            }
-            cumulativeRowHtml += `<td class="p-4 text-sm font-black text-slate-400 bg-indigo-100/20">-</td>`;
-            cumulativeRowHtml += `<td class="p-4 text-base font-black text-white bg-emerald-600 rounded-br-2xl shadow-inner">${totalOverall}</td></tr>`;
-
-            return totalRowHtml + cumulativeRowHtml;
-        }
-
-        /** 市・区・町・村別のセルHTML生成ヘルパー */
-        function renderTypeCells(counts, types, isMain = false, isDarkBg = false) {
-            return `<div class="grid grid-cols-2 gap-x-2 text-[9px] font-black leading-tight">
-                ${types.map(k => {
-                    const cfg = CITY_TYPES_CONFIG[k];
-                    const val = counts[k] || 0;
-                    let colorClass = val > 0 ? (isMain ? cfg.totalColor : cfg.color) : 'text-slate-200';
-                    if (isDarkBg && val > 0) colorClass = 'text-white';
-                    if (isDarkBg && val === 0) colorClass = 'text-white/20';
-                    return `<span class="${colorClass}">${k}:${val}</span>`;
-                }).join('')}
-            </div>`;
-        }
-
-        /** 市・区・町・村別 訪問統計テーブルの描画 */
-        function appRenderTypeStatsTable() {
-            const head = document.getElementById('ui-type-stats-head');
-            const body = document.getElementById('ui-type-stats-body');
-            if (!head || !body) return;
-
-            const cycleCount = appState.config.prefDenominators.length;
-            const labels = ["1年目前半", "1年目後半", "2年目前半", "2年目後半", "3年目前半", "3年目後半", "4年目前半", "4年目後半"];
-            const baseStart = appState.config.baseStart;
             const types = Object.keys(CITY_TYPES_CONFIG);
 
             // ヘッダー
-            head.innerHTML = `<th class="p-2 text-[11px] font-black text-slate-400 text-left bg-slate-50/50 rounded-l-2xl w-24">期間</th>` + 
-                Array.from({length: cycleCount}, (_, i) => `<th class="p-4 text-[11px] font-black text-slate-400 bg-slate-50/50">第${i+1}</th>`).join('') +
-                `<th class="p-4 text-[11px] font-black text-indigo-500 bg-indigo-50/50 rounded-r-2xl">期間計</th>`;
+            head.innerHTML = `<th class="p-3 text-[10px] font-black text-slate-400 text-left bg-slate-50/50 rounded-l-2xl w-24">期間</th>` +
+                Array.from({ length: cycleCount }, (_, i) => `<th class="p-4 text-[10px] font-black text-slate-400 bg-slate-50/50">第${i + 1}</th>`).join('') +
+                `<th class="p-4 text-[10px] font-black text-indigo-500 bg-indigo-50/50">合計</th>` +
+                `<th class="p-4 text-[10px] font-black text-emerald-500 bg-emerald-50/50 rounded-r-2xl">累計</th>`;
 
-            const matrix = Array.from({ length: 8 }, () => Array.from({ length: cycleCount }, () => ({ "市": 0, "区": 0, "町": 0, "村": 0 })));
-            const firstVisits = getFirstVisits(appState.enrichedRecords);
+            const firstVisits = getFirstVisits(appState.records);
+            const matrix = Array.from({ length: 8 }, () => Array.from({ length: cycleCount }, () => ({ total: 0, types: { "市": 0, "区": 0, "町": 0, "村": 0 } })));
 
             firstVisits.forEach(v => {
                 const { cycle, period } = dateUtils.getCycleAndPeriod(v.date, baseStart);
                 if (cycle >= 0 && cycle < cycleCount && period >= 0 && period < 8) {
+                    matrix[period][cycle].total++;
                     const last = v.city.slice(-1);
-                    if (matrix[period][cycle][last] !== undefined) matrix[period][cycle][last]++;
+                    if (matrix[period][cycle].types[last] !== undefined) matrix[period][cycle].types[last]++;
                 }
             });
 
-            const cycleTotals = Array.from({ length: cycleCount }, () => ({ "市": 0, "区": 0, "町": 0, "村": 0 }));
-            const grandTotals = { "市": 0, "区": 0, "町": 0, "村": 0 };
+            const colTotals = Array.from({ length: cycleCount }, () => ({ total: 0, types: { "市": 0, "区": 0, "町": 0, "村": 0 } }));
+            const rowCumulatives = Array.from({ length: 8 }, () => ({ total: 0, types: { "市": 0, "区": 0, "町": 0, "村": 0 } }));
+            let verticalRunningTotal = 0;
+            let verticalRunningTypes = { "市": 0, "区": 0, "町": 0, "村": 0 };
 
             body.innerHTML = labels.map((label, pIdx) => {
-                const rowTotals = { "市": 0, "区": 0, "町": 0, "村": 0 };
-                const cells = matrix[pIdx].map((counts, cIdx) => {
+                let rowSum = 0;
+                let rowTypeSums = { "市": 0, "区": 0, "町": 0, "村": 0 };
+                
+                const cells = matrix[pIdx].map((data, cIdx) => {
+                    rowSum += data.total;
+                    colTotals[cIdx].total += data.total;
                     types.forEach(k => {
-                        rowTotals[k] += counts[k];
-                        cycleTotals[cIdx][k] += counts[k];
-                        grandTotals[k] += counts[k];
+                        rowTypeSums[k] += data.types[k];
+                        colTotals[cIdx].types[k] += data.types[k];
                     });
-                    return `<td class="p-2 border-b border-slate-50">${renderTypeCells(counts, types)}</td>`;
+                    return `<td class="p-1 px-2 border-b border-slate-50">${renderUnifiedCell(data.total, data.types)}</td>`;
                 }).join('');
 
-                const rowTotalHtml = `<td class="p-2 bg-indigo-50/10 border-b border-indigo-50">
-                    ${renderTypeCells(rowTotals, types, true)}
-                </td>`;
+                verticalRunningTotal += rowSum;
+                types.forEach(k => verticalRunningTypes[k] += rowTypeSums[k]);
 
-                return `<tr class="hover:bg-slate-50 transition-all">
-                    <td class="p-2 text-left border-b border-slate-50"><span class="text-[12px] font-black text-slate-500">${label}</span></td>
-                    ${cells}${rowTotalHtml}</tr>`;
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-all">
+                        <td class="p-3 text-left border-b border-slate-50 font-black text-slate-500 text-[11px] leading-tight">${label}</td>
+                        ${cells}
+                        <td class="p-1 px-2 bg-indigo-50/30 border-b border-indigo-100">${renderUnifiedCell(rowSum, rowTypeSums)}</td>
+                        <td class="p-1 px-2 bg-emerald-50/30 border-b border-emerald-100">${renderUnifiedCell(verticalRunningTotal, { ...verticalRunningTypes })}</td>
+                    </tr>
+                `;
             }).join('');
 
             // 合計行
-            let footerHtml = `<tr class="bg-indigo-50/30">
-                <td class="p-4 text-left font-black text-indigo-600 text-[12px]">合計</td>`;
-            for (let i = 0; i < cycleCount; i++) {
-                footerHtml += `<td class="p-2">${renderTypeCells(cycleTotals[i], types, true)}</td>`;
-            }
-            footerHtml += `<td class="p-2 bg-indigo-100/50">${renderTypeCells(grandTotals, types, true)}</td></tr>`;
-            
-            // 累計行
-            let cumulativeRowHtml = `<tr class="bg-emerald-50/30">
-                <td class="p-4 text-left font-black text-emerald-600 text-[12px] rounded-bl-2xl">累計</td>`;
-            const cumulative = { "市": 0, "区": 0, "町": 0, "村": 0 };
-            for (let i = 0; i < cycleCount; i++) {
-                types.forEach(k => cumulative[k] += cycleTotals[i][k]);
-                cumulativeRowHtml += `<td class="p-2">${renderTypeCells(cumulative, types, true)}</td>`;
-            }
-            cumulativeRowHtml += `<td class="p-2 bg-emerald-600 rounded-br-2xl shadow-inner">${renderTypeCells(grandTotals, types, true, true)}</td></tr>`;
+            let grandTotal = 0;
+            let grandTypeTotals = { "市": 0, "区": 0, "町": 0, "村": 0 };
+            let totalRow = `<tr class="bg-indigo-50/60"><td class="p-3 text-left font-black text-indigo-600 text-[11px]">合計</td>`;
+            colTotals.forEach(ct => {
+                grandTotal += ct.total;
+                types.forEach(k => grandTypeTotals[k] += ct.types[k]);
+                totalRow += `<td class="p-1 px-2">${renderUnifiedCell(ct.total, ct.types)}</td>`;
+            });
+            totalRow += `<td class="p-1 px-2 bg-indigo-600 shadow-inner rounded-br-2xl">${renderUnifiedCell(grandTotal, grandTypeTotals, true)}</td><td></td></tr>`;
 
-            body.innerHTML += footerHtml + cumulativeRowHtml;
+            // 累計行
+            let runningTotal = 0;
+            let runningTypeTotals = { "市": 0, "区": 0, "町": 0, "村": 0 };
+            let cumulRow = `<tr class="bg-emerald-50/60"><td class="p-3 text-left font-black text-emerald-600 text-[11px] rounded-bl-2xl">累計</td>`;
+            colTotals.forEach(ct => {
+                runningTotal += ct.total;
+                types.forEach(k => runningTypeTotals[k] += ct.types[k]);
+                cumulRow += `<td class="p-1 px-2">${renderUnifiedCell(runningTotal, { ...runningTypeTotals })}</td>`;
+            });
+            cumulRow += `<td></td><td class="p-1 px-2 bg-emerald-600 shadow-inner rounded-br-2xl">${renderUnifiedCell(grandTotal, grandTypeTotals, true)}</td></tr>`;
+
+            body.innerHTML += totalRow + cumulRow;
         }
 
         /** カスタム項目テーブルの描画 */
