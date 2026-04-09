@@ -1060,10 +1060,8 @@
                     // 両方今周期あり：今周期の最古訪問日で比較
                     const diff = currentA[0].ts - currentB[0].ts;
                     if (diff !== 0) return diff;
-                    // 今周期が同じなら、登録順（ID）で比較
-                    const idA = Math.min(...grpA.map(r => r.id || 0));
-                    const idB = Math.min(...grpB.map(r => r.id || 0));
-                    return idA - idB;
+                    // 今周期が同じなら、今周期レコードの登録順（ID）で比較
+                    return currentA[0].id - currentB[0].id;
                 }
 
                 // 両方過去のみ：登録順（ID）で比較
