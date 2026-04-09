@@ -1046,15 +1046,30 @@
             const uniqueCities = Object.keys(cityGroups).sort((a, b) => {
                 const grpA = cityGroups[a];
                 const grpB = cityGroups[b];
-                const hasCurrA = grpA.some(r => r.info.label !== "PAST" && r.info.label !== "FUTURE");
-                const hasCurrB = grpB.some(r => r.info.label !== "PAST" && r.info.label !== "FUTURE");
+                
+                // 現在周期の訪問があるか
+                const currentA = grpA.filter(r => r.info.label !== "PAST" && r.info.label !== "FUTURE").sort((x, y) => x.ts - y.ts);
+                const currentB = grpB.filter(r => r.info.label !== "PAST" && r.info.label !== "FUTURE").sort((x, y) => x.ts - y.ts);
+                const hasCurrA = currentA.length > 0;
+                const hasCurrB = currentB.length > 0;
 
                 if (hasCurrA && !hasCurrB) return -1;
                 if (!hasCurrA && hasCurrB) return 1;
 
-                const timeA = grpA.filter(r => r.info.label !== "FUTURE").sort((x, y) => x.ts - y.ts)[0]?.ts || 0;
-                const timeB = grpB.filter(r => r.info.label !== "FUTURE").sort((x, y) => x.ts - y.ts)[0]?.ts || 0;
-                return timeA - timeB;
+                if (hasCurrA && hasCurrB) {
+                    // 両方今周期あり：今周期の最古訪問日で比較
+                    const diff = currentA[0].ts - currentB[0].ts;
+                    if (diff !== 0) return diff;
+                    // 今周期が同じなら、登録順（ID）で比較
+                    const idA = Math.min(...grpA.map(r => r.id || 0));
+                    const idB = Math.min(...grpB.map(r => r.id || 0));
+                    return idA - idB;
+                }
+
+                // 両方過去のみ：登録順（ID）で比較
+                const idA = Math.min(...grpA.map(r => r.id || 0));
+                const idB = Math.min(...grpB.map(r => r.id || 0));
+                return idA - idB;
             });
 
             // 各グループ（自治体）ごとに1枚のカードを出す
