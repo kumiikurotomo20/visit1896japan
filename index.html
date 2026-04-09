@@ -1446,12 +1446,21 @@
             headHtml += `<th class="p-4 text-[11px] font-black text-emerald-500 bg-emerald-50/50 rounded-r-2xl">累計</th>`;
             head.innerHTML = headHtml;
 
-            // データ集計
+            // データ集計（初訪問のみカウントするロジック）
+            const firstVisits = {};
+            appState.records.forEach(r => {
+                const key = `${r.pref}-${r.city}`;
+                const ts = new Date(r.date).getTime();
+                if (!firstVisits[key] || ts < firstVisits[key].ts) {
+                    firstVisits[key] = { ts, date: r.date };
+                }
+            });
+
             const base = new Date(appState.config.baseStart);
             const matrix = Array.from({ length: 8 }, () => Array(cycleCount).fill(0));
 
-            appState.records.forEach(r => {
-                const target = new Date(r.date);
+            Object.values(firstVisits).forEach(v => {
+                const target = new Date(v.date);
                 let diff = (target.getFullYear() - base.getFullYear()) * 12 + (target.getMonth() - base.getMonth());
                 if (target.getDate() < base.getDate()) diff--;
                 
@@ -1467,7 +1476,9 @@
 
             // 行の生成
             let bodyHtml = "";
-            let cumulativeTotal = 0;
+            let verticalCumulativeTotal = 0;
+            const cycleSums = Array(cycleCount).fill(0);
+
             labels.forEach((label, pIdx) => {
                 let rowTotal = 0;
                 let rowHtml = `<tr class="group hover:bg-slate-50/80 transition-all">
@@ -1478,21 +1489,48 @@
                 for (let cIdx = 0; cIdx < cycleCount; cIdx++) {
                     const count = matrix[pIdx][cIdx];
                     rowTotal += count;
+                    cycleSums[cIdx] += count;
                     rowHtml += `<td class="p-4 border-b border-slate-50">
                         <span class="text-sm font-black ${count > 0 ? 'text-slate-900 group-hover:scale-110' : 'text-slate-200'} inline-block transition-transform">${count}</span>
                     </td>`;
                 }
                 
-                cumulativeTotal += rowTotal;
-                rowHtml += `<td class="p-4 bg-indigo-50/20 border-b border-indigo-100/50">
-                    <span class="text-sm font-black text-indigo-600">${rowTotal}</span>
+                verticalCumulativeTotal += rowTotal;
+                rowHtml += `<td class="p-4 bg-indigo-50/10 border-b border-indigo-50">
+                    <span class="text-sm font-black text-indigo-500">${rowTotal}</span>
                 </td>`;
-                rowHtml += `<td class="p-4 bg-emerald-50/20 border-b border-emerald-100/50">
-                    <span class="text-sm font-black text-emerald-600">${cumulativeTotal}</span>
+                rowHtml += `<td class="p-4 bg-emerald-50/10 border-b border-emerald-50">
+                    <span class="text-sm font-black text-emerald-500">${verticalCumulativeTotal}</span>
                 </td></tr>`;
                 
                 bodyHtml += rowHtml;
             });
+
+            // --- 新設：合計行 ---
+            let totalRowTotal = 0;
+            let totalRowHtml = `<tr class="bg-indigo-50/30">
+                <td class="p-4 text-left font-black text-indigo-600 text-[12px]">合計</td>`;
+            for (let i = 0; i < cycleCount; i++) {
+                totalRowTotal += cycleSums[i];
+                totalRowHtml += `<td class="p-4 text-sm font-black text-indigo-600">${cycleSums[i]}</td>`;
+            }
+            totalRowHtml += `<td class="p-4 text-sm font-black text-indigo-800 bg-indigo-100/50">${totalRowTotal}</td>`;
+            totalRowHtml += `<td class="p-4 text-sm font-black text-slate-400 bg-emerald-100/20">-</td></tr>`;
+            bodyHtml += totalRowHtml;
+
+            // --- 新設：累計行 ---
+            let currentCycleCum = 0;
+            let cumulativeRowHtml = `<tr class="bg-emerald-50/30">
+                <td class="p-4 text-left font-black text-emerald-600 text-[12px] rounded-bl-2xl">累計</td>`;
+            for (let i = 0; i < cycleCount; i++) {
+                currentCycleCum += cycleSums[i];
+                cumulativeRowHtml += `<td class="p-4 text-sm font-black text-emerald-600">${currentCycleCum}</td>`;
+            }
+            cumulativeRowHtml += `<td class="p-4 text-sm font-black text-slate-400 bg-indigo-100/20">-</td>`;
+            // 右下のセル：全期間実質訪問数
+            cumulativeRowHtml += `<td class="p-4 text-base font-black text-white bg-emerald-600 rounded-br-2xl shadow-inner">${totalRowTotal}</td></tr>`;
+            bodyHtml += cumulativeRowHtml;
+
             body.innerHTML = bodyHtml;
         }
 
