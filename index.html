@@ -253,6 +253,39 @@
                         <tbody id="ui-stats-body"></tbody>
                     </table>
                 </div>
+            <!-- 市区町村種別 訪問統計 -->
+            <div class="card p-8 overflow-hidden border-b-8 border-indigo-200">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-xs text-indigo-400 tracking-widest uppercase italic">🏙️ 市・区・町・村別 訪問統計</h3>
+                    <span class="text-[9px] font-bold text-slate-400">※末尾文字（市/区/町/村）による分類集計</span>
+                </div>
+                <div class="overflow-x-auto scroll-hide">
+                    <table class="w-full border-separate border-spacing-1">
+                        <thead><tr id="ui-type-stats-head"></tr></thead>
+                        <tbody id="ui-type-stats-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- カスタム項目テーブル -->
+            <div class="card p-8 border-b-8 border-emerald-900">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">📋 自由入力・達成管理</h3>
+                    <button onclick="appAddManualRow()" class="px-4 py-2 bg-slate-900 text-white text-[10px] font-black rounded-xl hover:bg-emerald-600 transition-all">+ 行を追加</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs border-collapse">
+                        <thead>
+                            <tr class="text-slate-400 text-left border-b">
+                                <th class="py-4 px-2 font-black uppercase">項目</th>
+                                <th class="py-4 px-2 font-black uppercase">市区町村名</th>
+                                <th class="py-4 px-2 font-black uppercase">達成日</th>
+                                <th class="py-4 px-2 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ui-manual-body" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="card p-8 min-h-[300px]">
@@ -563,7 +596,8 @@
             currentViewPref: "東京都",
             showPastCityGrid: true,
             showPastHistory: true,
-            editingCycle: 0
+            editingCycle: 0,
+            manualItems: Array.from({ length: 10 }, () => ({ id: Date.now() + Math.random(), title: "", city: "", date: "" }))
         };
 
         function appConfigAddCycle() {
@@ -602,12 +636,14 @@
             const rLocal = localStorage.getItem('visit_v95_recs');
             const cLocal = localStorage.getItem('visit_v95_cfg');
             const mLocal = localStorage.getItem('visit_v95_mergers');
+            const mnLocal = localStorage.getItem('visit_v95_manual');
             if (rLocal) {
                 const p = JSON.parse(rLocal);
                 if (p.length > loadedRecs.length) loadedRecs = p;
             }
             if (cLocal) loadedCfg = JSON.parse(cLocal);
             if (mLocal) loadedMergers = JSON.parse(mLocal);
+            if (mnLocal) appState.manualItems = JSON.parse(mnLocal);
 
             // 読み込んだデータをセット
             appState.records = loadedRecs;
@@ -665,6 +701,11 @@
                         }
                         if (data.mergers && JSON.stringify(appState.mergers) !== JSON.stringify(data.mergers)) {
                             appState.mergers = data.mergers;
+                            needsRender = true;
+                        }
+
+                        if (data.manualItems && JSON.stringify(appState.manualItems) !== JSON.stringify(data.manualItems)) {
+                            appState.manualItems = data.manualItems;
                             needsRender = true;
                         }
 
@@ -786,18 +827,21 @@
             appRenderPrefList();
             appRenderCityGrid();
             appRenderHistory();
-            appRenderStatsTable(); // 統計テーブルの描画
-            appUpdateMergerUI(); // 設定画面のリスト更新
+            appRenderStatsTable();
+            appRenderTypeStatsTable();
+            appRenderManualTable();
 
             localStorage.setItem('visit_v95_recs', JSON.stringify(appState.records));
             localStorage.setItem('visit_v95_cfg', JSON.stringify(appState.config));
             localStorage.setItem('visit_v95_mergers', JSON.stringify(appState.mergers));
+            localStorage.setItem('visit_v95_manual', JSON.stringify(appState.manualItems));
 
             if (!preventFirebaseSave && firebaseConfig.apiKey !== "YOUR_API_KEY") {
                 getSyncDocRef().set({
                     records: appState.records,
                     config: appState.config,
                     mergers: appState.mergers,
+                    manualItems: appState.manualItems,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }).catch(e => console.error("Firebase sync error", e));
             }
@@ -1577,6 +1621,94 @@
             cumulativeRowHtml += `<td class="p-4 text-base font-black text-white bg-emerald-600 rounded-br-2xl shadow-inner">${totalOverall}</td></tr>`;
 
             return totalRowHtml + cumulativeRowHtml;
+        }
+
+        /** 市・区・町・村別 訪問統計テーブルの描画 */
+        function appRenderTypeStatsTable() {
+            const head = document.getElementById('ui-type-stats-head');
+            const body = document.getElementById('ui-type-stats-body');
+            if (!head || !body) return;
+
+            const cycleCount = appState.config.prefDenominators.length;
+            const labels = ["1年目前半", "1年目後半", "2年目前半", "2年目後半", "3年目前半", "3年目後半", "4年目前半", "4年目後半"];
+            const baseStart = appState.config.baseStart;
+
+            head.innerHTML = `<th class="p-4 text-[11px] font-black text-slate-400 text-left bg-slate-50/50 rounded-l-2xl">期間</th>` + 
+                Array.from({length: cycleCount}, (_, i) => `<th class="p-4 text-[11px] font-black text-slate-400 bg-slate-50/50">第${i+1}</th>`).join('') +
+                `<th class="p-4 text-[11px] font-black text-indigo-500 bg-indigo-50/50 rounded-r-2xl">期間計</th>`;
+
+            const matrix = Array.from({ length: 8 }, () => Array.from({ length: cycleCount }, () => ({ "市": 0, "区": 0, "町": 0, "村": 0 })));
+            const firstVisits = getFirstVisits(appState.enrichedRecords);
+
+            firstVisits.forEach(v => {
+                const { cycle, period } = dateUtils.getCycleAndPeriod(v.date, baseStart);
+                if (cycle >= 0 && cycle < cycleCount && period >= 0 && period < 8) {
+                    const last = v.city.slice(-1);
+                    if (matrix[period][cycle][last] !== undefined) matrix[period][cycle][last]++;
+                }
+            });
+
+            body.innerHTML = labels.map((label, pIdx) => {
+                const rowTotals = { "市": 0, "区": 0, "町": 0, "村": 0 };
+                const cells = matrix[pIdx].map(counts => {
+                    Object.keys(counts).forEach(k => rowTotals[k] += counts[k]);
+                    return `<td class="p-2 border-b border-slate-50">
+                        <div class="grid grid-cols-2 gap-x-2 text-[9px] font-black tracking-tighter leading-tight">
+                            <span class="${counts['市']>0?'text-slate-900':'text-slate-200'}">市:${counts['市']}</span>
+                            <span class="${counts['区']>0?'text-rose-500':'text-slate-200'}">区:${counts['区']}</span>
+                            <span class="${counts['町']>0?'text-indigo-500':'text-slate-200'}">町:${counts['町']}</span>
+                            <span class="${counts['村']>0?'text-emerald-500':'text-slate-200'}">村:${counts['村']}</span>
+                        </div>
+                    </td>`;
+                }).join('');
+
+                const rowTotalHtml = `<td class="p-2 bg-indigo-50/10 border-b border-indigo-50">
+                    <div class="grid grid-cols-2 gap-x-2 text-[9px] font-black text-indigo-400 leading-tight">
+                        <span>市:${rowTotals['市']}</span><span>区:${rowTotals['区']}</span>
+                        <span>町:${rowTotals['町']}</span><span>村:${rowTotals['村']}</span>
+                    </div>
+                </td>`;
+
+                return `<tr class="hover:bg-slate-50 transition-all">
+                    <td class="p-4 text-left border-b border-slate-50"><span class="text-[12px] font-black text-slate-500">${label}</span></td>
+                    ${cells}${rowTotalHtml}</tr>`;
+            }).join('');
+        }
+
+        /** カスタム項目テーブルの描画 */
+        function appRenderManualTable() {
+            const body = document.getElementById('ui-manual-body');
+            if (!body) return;
+            body.innerHTML = appState.manualItems.map((item, idx) => `
+                <tr>
+                    <td class="py-2 px-2"><input type="text" value="${item.title}" onchange="appUpdateManual(${idx}, 'title', this.value)" placeholder="例: 日本百名山" class="w-full bg-transparent outline-none font-bold text-slate-700 focus:bg-white focus:ring-1 ring-slate-200 rounded px-2 py-1"></td>
+                    <td class="py-2 px-2"><input type="text" value="${item.city}" onchange="appUpdateManual(${idx}, 'city', this.value)" placeholder="市区町村名" class="w-full bg-transparent outline-none font-bold text-slate-700 focus:bg-white focus:ring-1 ring-slate-200 rounded px-2 py-1"></td>
+                    <td class="py-2 px-2"><input type="date" value="${item.date}" onchange="appUpdateManual(${idx}, 'date', this.value)" class="bg-transparent outline-none font-bold text-slate-700 focus:bg-white focus:ring-1 ring-slate-200 rounded px-2 py-1"></td>
+                    <td class="py-2 px-2 text-right">
+                        <button onclick="appDelManualRow(${idx})" class="text-slate-200 hover:text-rose-500 transition-colors px-2">✕</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function appUpdateManual(idx, field, val) {
+            appState.manualItems[idx][field] = val;
+            appRenderAll();
+        }
+
+        function appAddManualRow() {
+            appState.manualItems.push({ id: Date.now(), title: "", city: "", date: "" });
+            appRenderAll();
+        }
+
+        function appDelManualRow(idx) {
+            if (appState.manualItems.length > 1) {
+                appState.manualItems.splice(idx, 1);
+                appRenderAll();
+            } else {
+                appState.manualItems[0] = { id: Date.now(), title: "", city: "", date: "" };
+                appRenderAll();
+            }
         }
 
         window.onload = appInit;
