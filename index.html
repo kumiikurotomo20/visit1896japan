@@ -1631,12 +1631,14 @@
         }
 
         /** 市・区・町・村別のセルHTML生成ヘルパー */
-        function renderTypeCells(counts, types, isMain = false) {
+        function renderTypeCells(counts, types, isMain = false, isDarkBg = false) {
             return `<div class="grid grid-cols-2 gap-x-2 text-[9px] font-black leading-tight">
                 ${types.map(k => {
                     const cfg = CITY_TYPES_CONFIG[k];
                     const val = counts[k] || 0;
-                    const colorClass = val > 0 ? (isMain ? cfg.totalColor : cfg.color) : 'text-slate-200';
+                    let colorClass = val > 0 ? (isMain ? cfg.totalColor : cfg.color) : 'text-slate-200';
+                    if (isDarkBg && val > 0) colorClass = 'text-white';
+                    if (isDarkBg && val === 0) colorClass = 'text-white/20';
                     return `<span class="${colorClass}">${k}:${val}</span>`;
                 }).join('')}
             </div>`;
@@ -1708,7 +1710,7 @@
                 types.forEach(k => cumulative[k] += cycleTotals[i][k]);
                 cumulativeRowHtml += `<td class="p-2">${renderTypeCells(cumulative, types, true)}</td>`;
             }
-            cumulativeRowHtml += `<td class="p-2 bg-emerald-600 rounded-br-2xl shadow-inner">${renderTypeCells(grandTotals, types, true)}</td></tr>`;
+            cumulativeRowHtml += `<td class="p-2 bg-emerald-600 rounded-br-2xl shadow-inner">${renderTypeCells(grandTotals, types, true, true)}</td></tr>`;
 
             body.innerHTML += footerHtml + cumulativeRowHtml;
         }
