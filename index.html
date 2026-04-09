@@ -202,6 +202,22 @@
                 </div>
             </div>
 
+            <!-- 訪問統計テーブル -->
+            <div class="card p-8 overflow-hidden border-b-8 border-slate-900">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">🚲 周期別・期間別 訪問統計</h3>
+                    <span class="text-[9px] font-bold text-slate-400">※各マスの「前半」は4/1〜9/30、「後半」は10/1〜3/31の訪問数合計</span>
+                </div>
+                <div class="overflow-x-auto scroll-hide">
+                    <table class="w-full border-separate border-spacing-1">
+                        <thead>
+                            <tr id="ui-stats-head"></tr>
+                        </thead>
+                        <tbody id="ui-stats-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="card p-8 min-h-[300px]">
                 <div
                     class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
@@ -719,6 +735,7 @@
             appRenderPrefList();
             appRenderCityGrid();
             appRenderHistory();
+            appRenderStatsTable(); // 統計テーブルの描画
             appUpdateMergerUI(); // 設定画面のリスト更新
 
             localStorage.setItem('visit_v95_recs', JSON.stringify(appState.records));
@@ -1410,6 +1427,73 @@
             document.getElementById('modal-settings').style.display = 'none';
             updateActiveCycle();
             appRenderAll();
+        }
+
+        function appRenderStatsTable() {
+            const head = document.getElementById('ui-stats-head');
+            const body = document.getElementById('ui-stats-body');
+            if (!head || !body) return;
+
+            const cycleCount = appState.config.prefDenominators.length;
+            const labels = ["1年目前半", "1年目後半", "2年目前半", "2年目後半", "3年目前半", "3年目後半", "4年目前半", "4年目後半"];
+            
+            // ヘッダー生成
+            let headHtml = `<th class="p-4 text-[11px] font-black text-slate-400 text-left bg-slate-50/50 rounded-l-2xl">期間</th>`;
+            for (let i = 0; i < cycleCount; i++) {
+                headHtml += `<th class="p-4 text-[11px] font-black text-slate-400 bg-slate-50/50">第${i + 1}</th>`;
+            }
+            headHtml += `<th class="p-4 text-[11px] font-black text-indigo-500 bg-indigo-50/50">合計</th>`;
+            headHtml += `<th class="p-4 text-[11px] font-black text-emerald-500 bg-emerald-50/50 rounded-r-2xl">累計</th>`;
+            head.innerHTML = headHtml;
+
+            // データ集計
+            const base = new Date(appState.config.baseStart);
+            const matrix = Array.from({ length: 8 }, () => Array(cycleCount).fill(0));
+
+            appState.records.forEach(r => {
+                const target = new Date(r.date);
+                let diff = (target.getFullYear() - base.getFullYear()) * 12 + (target.getMonth() - base.getMonth());
+                if (target.getDate() < base.getDate()) diff--;
+                
+                if (diff < 0) return;
+
+                const cycleIdx = Math.floor(diff / 48);
+                const periodIdx = Math.floor((diff % 48) / 6);
+
+                if (cycleIdx < cycleCount && periodIdx >= 0 && periodIdx < 8) {
+                    matrix[periodIdx][cycleIdx]++;
+                }
+            });
+
+            // 行の生成
+            let bodyHtml = "";
+            let cumulativeTotal = 0;
+            labels.forEach((label, pIdx) => {
+                let rowTotal = 0;
+                let rowHtml = `<tr class="group hover:bg-slate-50/80 transition-all">
+                    <td class="p-4 text-left border-b border-slate-50">
+                        <span class="text-[12px] font-black text-slate-500 group-hover:text-indigo-600 transition-colors">${label}</span>
+                    </td>`;
+                
+                for (let cIdx = 0; cIdx < cycleCount; cIdx++) {
+                    const count = matrix[pIdx][cIdx];
+                    rowTotal += count;
+                    rowHtml += `<td class="p-4 border-b border-slate-50">
+                        <span class="text-sm font-black ${count > 0 ? 'text-slate-900 group-hover:scale-110' : 'text-slate-200'} inline-block transition-transform">${count}</span>
+                    </td>`;
+                }
+                
+                cumulativeTotal += rowTotal;
+                rowHtml += `<td class="p-4 bg-indigo-50/20 border-b border-indigo-100/50">
+                    <span class="text-sm font-black text-indigo-600">${rowTotal}</span>
+                </td>`;
+                rowHtml += `<td class="p-4 bg-emerald-50/20 border-b border-emerald-100/50">
+                    <span class="text-sm font-black text-emerald-600">${cumulativeTotal}</span>
+                </td></tr>`;
+                
+                bodyHtml += rowHtml;
+            });
+            body.innerHTML = bodyHtml;
         }
 
         window.onload = appInit;
