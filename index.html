@@ -1317,7 +1317,7 @@
                     let matchedRec = cityRecs.find(r =>
                         r.city === fullName ||
                         r.city === cityName ||
-                        (fullName.includes(r.city) && r.city.length > 1)
+                        (cityName.startsWith(r.city) && r.city.length >= 2)
                     );
 
                     let fillColor = "#f1f5f9";
@@ -1384,7 +1384,7 @@
                     let matchedRec = cityRecs.find(r =>
                         r.city === fullName ||
                         r.city === cityName ||
-                        (fullName.includes(r.city) && r.city.length > 1)
+                        (cityName.startsWith(r.city) && r.city.length >= 2)
                     );
                     let rc = matchedRec ? cityRecs.filter(r => r.city === matchedRec.city).sort((a, b) => b.ts - a.ts) : [];
 
