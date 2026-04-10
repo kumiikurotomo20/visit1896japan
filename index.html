@@ -232,7 +232,14 @@
                 </div>
                 <div class="card p-8 border-l-8 border-emerald-500 flex flex-col justify-center">
                     <p class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">全期間 実質訪問数 (重複排除)</p>
-                    <div class="flex ite            <!-- 市区町村グリッド -->
+                    <div class="flex items-baseline gap-2">
+                        <span id="ui-unique-count" class="text-8xl font-black text-slate-900 tracking-tighter">0</span>
+                        <span id="ui-total-denom" class="text-3xl font-bold text-slate-200 italic">/ 1896</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 市区町村グリッド -->
             <div id="section-city-grid" class="card p-8 min-h-[300px]">
                 <div
                     class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
