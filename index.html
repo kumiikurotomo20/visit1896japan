@@ -478,19 +478,27 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button onclick="appCaptureMap()"
-                        class="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-emerald-200 transition-all active:scale-95 flex items-center gap-2">
-                        <span>📸</span> 画像として保存 (JPG)
+                    <button onclick="appCaptureMap('jpeg')"
+                        class="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-emerald-200 transition-all active:scale-95 flex items-center gap-2">
+                        <span>📸</span> JPG保存
+                    </button>
+                    <button onclick="appCaptureMap('png')"
+                        class="px-5 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2">
+                        <span>📸</span> PNG保存
                     </button>
                     <button onclick="document.getElementById('modal-map').style.display='none'"
                         class="p-4 text-slate-300 hover:text-slate-900 transition-colors text-3xl">✕</button>
                 </div>
             </div>
-            <div class="relative flex-1 bg-slate-50" id="ui-map-capture-area">
+            <div class="relative flex-1 bg-slate-50 overflow-hidden" id="ui-map-capture-area">
                 <div id="ui-map-container" class="absolute inset-0 z-0"></div>
-                <div id="ui-map-loading"
-                    class="font-bold text-slate-400 text-[11px] animate-pulse absolute inset-0 flex items-center justify-center bg-slate-50 z-20"
-                    style="display:none;">地図データを取得中...</div>
+            </div>
+            <!-- Loading overlay moved outside capture area -->
+            <div id="ui-map-loading"
+                class="font-black text-slate-500 text-[11px] animate-pulse absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-50 pointer-events-none"
+                style="display:none;">
+                <div class="mb-2 text-3xl">🗺️</div>
+                <div id="ui-map-loading-text">地図データを取得中...</div>
             </div>
         </div>
     </div>
@@ -614,25 +622,6 @@
                 <button onclick="appSaveEdit()"
                     class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-slate-900 transition-all active:scale-95 mt-4">💾
                     修正を保存する</button>
-            </div>
-        </div>
-    </div>
-
-                        <div class="flex items-center gap-1.5">
-                            <div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span
-                                class="text-[10px] font-bold text-slate-400">PAST</span>
-                        </div>
-                    </div>
-                </h3>
-                <button onclick="document.getElementById('modal-map').style.display='none'"
-                    class="text-slate-300 hover:text-rose-500 text-3xl font-black transition-colors px-2">✕</button>
-            </div>
-
-            <div id="ui-map-container"
-                class="flex-1 w-full bg-white rounded-[32px] border-2 border-slate-100 relative overflow-hidden flex items-center justify-center z-10">
-                <div id="ui-map-loading"
-                    class="font-bold text-slate-400 text-[11px] animate-pulse absolute inset-0 flex items-center justify-center bg-slate-50 z-20"
-                    style="display:none;">地図データを取得中...</div>
             </div>
         </div>
     </div>
@@ -1265,7 +1254,8 @@
                 if (window.japanGeoJson && window.japanGeoJson.features) {
                     globalGeojsonData = window.japanGeoJson;
                 } else {
-                    loader.textContent = "🗺️ 地図データを展開しています... (初回のみ)";
+                    const loaderText = document.getElementById('ui-map-loading-text');
+                    if (loaderText) loaderText.textContent = "🗺️ 地図データを展開しています... (初回のみ)";
                     loader.style.display = 'flex';
                     // 少し待ってからリトライ (スマホ対策: データの完全な読み込みを待つ)
                     setTimeout(() => appRenderMap(isNational), 800);
@@ -1419,27 +1409,35 @@
             }, 100);
         }
 
-        function appCaptureMap() {
+        function appCaptureMap(format = 'jpeg') {
             const area = document.getElementById('ui-map-capture-area');
-            const loading = document.getElementById('ui-map-loading');
-            loading.style.display = 'flex';
-            loading.innerHTML = '<span class="animate-spin text-2xl">📸</span> 画像を生成中...';
+            const loader = document.getElementById('ui-map-loading');
+            const loaderText = document.getElementById('ui-map-loading-text');
             
+            // 表示上のローダーを表示（エリアの外に出したのでキャプチャされない）
+            loader.style.display = 'flex';
+            loaderText.innerHTML = `<span class="italic font-black text-indigo-600">Generating ${format.toUpperCase()}...</span><br><span class="text-[9px] text-slate-400">画像生成中。しばらくお待ちください...</span>`;
+            
+            // html2canvas実行。scale:1.5に抑えて速度と画質のバランスを取る
             html2canvas(area, {
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: "#ffffff",
-                scale: 2 // 高画質化
+                scale: 1.5,
+                logging: false
             }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `city-visit-map-${Date.now()}.jpg`;
-                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                const ext = format === 'png' ? 'png' : 'jpg';
+                const mime = format === 'png' ? 'image/png' : 'image/jpeg';
+                
+                link.download = `city-visit-map-${Date.now()}.${ext}`;
+                link.href = canvas.toDataURL(mime, 0.9);
                 link.click();
-                loading.style.display = 'none';
+                loader.style.display = 'none';
             }).catch(e => {
                 console.error(e);
-                alert("画像の保存に失敗しました。タイルサーバーの制限またはブラウザの仕様によるものです。");
-                loading.style.display = 'none';
+                alert("画像の保存に失敗しました。画面をリロードして試してください。");
+                loader.style.display = 'none';
             });
         }
 
