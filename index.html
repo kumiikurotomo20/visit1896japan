@@ -9,6 +9,7 @@
     <!-- Leaflet Configuration -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <!-- Map Data (Converted to JS for Local Execution) -->
     <script src="japan_map_data.js" defer></script>
     <!-- Firebase SDK (Compat) -->
@@ -231,52 +232,8 @@
                 </div>
                 <div class="card p-8 border-l-8 border-emerald-500 flex flex-col justify-center">
                     <p class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">全期間 実質訪問数 (重複排除)</p>
-                    <div class="flex items-baseline gap-2">
-                        <span id="ui-unique-count" class="text-8xl font-black text-slate-900 tracking-tighter">0</span>
-                        <span id="ui-total-denom" class="text-3xl font-bold text-slate-200 italic">/ 1896</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 訪問統計テーブル -->
-            <div class="card p-8 overflow-hidden border-b-8 border-slate-900">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">🚲 周期別・期間別
-                        【新規】市区町村訪問統計</h3>
-                    <span class="text-[9px] font-bold text-slate-400">※各マスの「前半」は4/1〜9/30、「後半」は10/1〜3/31の訪問数合計</span>
-                </div>
-                <div class="overflow-x-auto scroll-hide">
-                    <table class="w-full border-separate border-spacing-1">
-                        <thead>
-                            <tr id="ui-stats-head"></tr>
-                        </thead>
-                        <tbody id="ui-stats-body"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- カスタム項目テーブル -->
-            <div class="card p-8 border-b-8 border-emerald-900">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">📋 自由入力・達成管理</h3>
-                    <button onclick="appAddManualRow()" class="px-4 py-2 bg-slate-900 text-white text-[10px] font-black rounded-xl hover:bg-emerald-600 transition-all">+ 行を追加</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs border-collapse">
-                        <thead>
-                            <tr class="text-slate-400 text-left border-b">
-                                <th class="py-4 px-2 font-black uppercase w-1/4">項目</th>
-                                <th class="py-4 px-2 font-black uppercase">市区町村名</th>
-                                <th class="py-4 px-2 font-black uppercase">達成日</th>
-                                <th class="py-4 px-2 text-right">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ui-manual-body" class="divide-y divide-slate-50"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card p-8 min-h-[300px]">
+                    <div class="flex ite            <!-- 市区町村グリッド -->
+            <div id="section-city-grid" class="card p-8 min-h-[300px]">
                 <div
                     class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
                     <div class="flex-1 w-full">
@@ -294,7 +251,7 @@
                                 class="px-4 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
                                 <span class="text-sm">🗾</span> 全国マップ表示
                             </button>
-
+                            
                             <!-- Legend -->
                             <div class="flex items-center gap-3 ml-2 border-l pl-4 border-slate-200">
                                 <div class="flex items-center gap-1.5">
@@ -329,7 +286,8 @@
                 <div id="ui-city-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
             </div>
 
-            <div class="card p-8">
+            <!-- 訪問履歴 -->
+            <div id="section-history" class="card p-8">
                 <div class="flex justify-between items-center mb-6">
                     <div class="flex items-center gap-4">
                         <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">訪問履歴</h3>
@@ -359,16 +317,16 @@
                     </div>
                     <button onclick="appTogglePastHistory()" id="btn-toggle-past-lower"
                         class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️
-                        過去分を隠す</button>
+                        過去分を表示</button>
                 </div>
-                <div class="overflow-x-auto max-h-[400px] overflow-y-auto scroll-hide">
-                    <table class="w-full text-xs">
-                        <thead class="border-b text-slate-400 sticky top-0 bg-white">
-                            <tr>
-                                <th class="py-4 px-2 text-left">No.</th>
-                                <th class="py-4 px-2 text-left">日付</th>
-                                <th class="py-4 px-2 text-left">区分</th>
-                                <th class="py-4 px-2 text-left">場所</th>
+                <div class="overflow-x-auto scroll-hide max-h-[600px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-50">
+                                <th class="py-4 px-2 w-12 text-center">No.</th>
+                                <th class="py-4 px-2 w-32">日付</th>
+                                <th class="py-4 px-2 w-24">区分</th>
+                                <th class="py-4 px-2">場所</th>
                                 <th class="py-4 px-2 text-right">操作</th>
                             </tr>
                         </thead>
@@ -376,8 +334,95 @@
                     </table>
                 </div>
             </div>
+
+            <!-- 訪問統計テーブル -->
+            <div id="section-stats-table" class="card p-8 overflow-hidden border-b-8 border-slate-900">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">🚲 周期別・期間別
+                        【新規】市区町村訪問統計</h3>
+                    <span class="text-[9px] font-bold text-slate-400">※各マスの「前半」は4/1〜9/30、「後半」は10/1〜3/31の訪問数合計</span>
+                </div>
+                <div class="overflow-x-auto scroll-hide">
+                    <table class="w-full border-separate border-spacing-1">
+                        <thead>
+                            <tr id="ui-stats-head"></tr>
+                        </thead>
+                        <tbody id="ui-stats-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 市区町村種別 訪問統計 -->
+            <div id="section-type-stats" class="card p-8 overflow-hidden border-b-8 border-indigo-200">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-xs text-indigo-400 tracking-widest uppercase italic">🏙️ 市・区・町・村別 訪問統計</h3>
+                    <span class="text-[9px] font-bold text-slate-400">※末尾文字（市/区/町/村）による分類集計</span>
+                </div>
+                <div class="overflow-x-auto scroll-hide">
+                    <table class="w-full border-separate border-spacing-1">
+                        <thead id="ui-type-stats-head"></thead>
+                        <tbody id="ui-type-stats-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- カスタム項目テーブル (自由入力) -->
+            <div id="section-manual-entry" class="card p-8 border-b-8 border-emerald-900">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-xs text-slate-400 tracking-widest uppercase italic">📋 自由入力・達成管理</h3>
+                    <button onclick="appAddManualRow()" class="px-4 py-2 bg-slate-900 text-white text-[10px] font-black rounded-xl hover:bg-emerald-600 transition-all shadow-lg active:scale-95">+ 行を追加</button>
+                </div>
+                <div class="overflow-x-auto scroll-hide">
+                    <table class="w-full text-xs border-collapse">
+                        <thead>
+                            <tr class="text-slate-400 text-left border-b border-slate-50">
+                                <th class="py-4 px-2 font-black uppercase tracking-tighter">項目</th>
+                                <th class="py-4 px-2 font-black uppercase tracking-tighter">市区町村名</th>
+                                <th class="py-4 px-2 font-black uppercase tracking-tighter">達成日</th>
+                                <th class="py-4 px-2 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ui-manual-body" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
         </div>
     </main>
+
+    <!-- マップ表示用モーダル -->
+    <div id="modal-map" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+        style="display:none;">
+        <div class="bg-white rounded-[40px] w-full max-w-5xl h-[85vh] relative flex flex-col overflow-hidden shadow-2xl animate-modal-in">
+            <div class="p-8 flex justify-between items-center border-b shrink-0 bg-white/80 backdrop-blur-sm z-10">
+                <div class="flex items-center gap-4">
+                    <span class="text-3xl">🗾</span>
+                    <div>
+                        <h3 id="ui-map-modal-title" class="font-black text-3xl tracking-tighter italic">マップ</h3>
+                        <div class="flex items-center gap-3 mt-1">
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ff2d55]"></div><span class="text-[9px] font-bold text-slate-400">1ST</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#ffcc00]"></div><span class="text-[9px] font-bold text-slate-400">2ND</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00e676]"></div><span class="text-[9px] font-bold text-slate-400">3RD</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#00d4ff]"></div><span class="text-[9px] font-bold text-slate-400">4TH</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span class="text-[9px] font-bold text-slate-400">PAST</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="appCaptureMap()"
+                        class="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-emerald-200 transition-all active:scale-95 flex items-center gap-2">
+                        <span>📸</span> 画像として保存 (JPG)
+                    </button>
+                    <button onclick="document.getElementById('modal-map').style.display='none'"
+                        class="p-4 text-slate-300 hover:text-slate-900 transition-colors text-3xl">✕</button>
+                </div>
+            </div>
+            <div class="relative flex-1 bg-slate-50" id="ui-map-capture-area">
+                <div id="ui-map-container" class="absolute inset-0 z-0"></div>
+                <div id="ui-map-loading"
+                    class="font-bold text-slate-400 text-[11px] animate-pulse absolute inset-0 flex items-center justify-center bg-slate-50 z-20"
+                    style="display:none;">地図データを取得中...</div>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-settings"
         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md"
@@ -502,33 +547,6 @@
         </div>
     </div>
 
-    <div id="modal-map"
-        class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
-        style="display:none;">
-        <div class="bg-white rounded-[40px] w-full max-w-5xl h-[85vh] p-8 flex flex-col shadow-2xl relative">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h3 class="font-black text-2xl tracking-tighter italic flex items-center gap-3 text-slate-800">
-                    <span class="text-3xl">🗺️</span>
-                    <span id="ui-map-modal-title">東京都 マップ</span>
-
-                    <!-- Legend -->
-                    <div class="flex items-center gap-3 border-l pl-4 border-slate-200 ml-2">
-                        <div class="flex items-center gap-1.5">
-                            <div class="w-2 h-2 rounded-full bg-[#ff2d55]"></div><span
-                                class="text-[10px] font-bold text-slate-400">1ST</span>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <div class="w-2 h-2 rounded-full bg-[#ffcc00]"></div><span
-                                class="text-[10px] font-bold text-slate-400">2ND</span>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <div class="w-2 h-2 rounded-full bg-[#00e676]"></div><span
-                                class="text-[10px] font-bold text-slate-400">3RD</span>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <div class="w-2 h-2 rounded-full bg-[#00d4ff]"></div><span
-                                class="text-[10px] font-bold text-slate-400">4TH</span>
-                        </div>
                         <div class="flex items-center gap-1.5">
                             <div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span
                                 class="text-[10px] font-bold text-slate-400">PAST</span>
@@ -696,6 +714,10 @@
                         }
                         if (data.mergers && JSON.stringify(appState.mergers) !== JSON.stringify(data.mergers)) {
                             appState.mergers = data.mergers;
+                            needsRender = true;
+                        }
+                        if (data.manualItems && JSON.stringify(appState.manualItems) !== JSON.stringify(data.manualItems)) {
+                            appState.manualItems = data.manualItems;
                             needsRender = true;
                         }
 
@@ -935,6 +957,7 @@
             const allTimeUnique = new Set(appState.enrichedRecords.map(r => `${r.pref}-${r.city}`)).size;
 
             const rate = totalDenom > 0 ? (cycleUnique / totalDenom) * 100 : 0;
+            const floorRate = Math.floor(rate * 100) / 100; // 小数第3位以下切り捨て
 
             const base = new Date(appState.config.baseStart);
             const startYear = base.getFullYear() + (appState.activeCycle * 4);
@@ -970,7 +993,7 @@
             }
 
             const rateEl = document.getElementById('ui-stat-rate');
-            if (rateEl) rateEl.textContent = `${rate.toFixed(2)}%`;
+            if (rateEl) rateEl.textContent = `${floorRate.toFixed(2)}%`;
 
             const progressEl = document.getElementById('ui-stat-progress');
             if (progressEl) progressEl.style.width = `${Math.min(rate, 100)}%`;
@@ -1146,12 +1169,25 @@
             return name || "";
         }
 
-        async function appRenderMap(isNational = false) {
+        async function appRenderMap(isNational = false, regionKey = null) {
             const p = appState.currentViewPref;
             const ctn = document.getElementById('ui-map-container');
             if (!ctn || document.getElementById('modal-map').style.display === 'none') return;
 
             const loader = document.getElementById('ui-map-loading');
+            const titleEl = document.getElementById('ui-map-modal-title');
+
+            if (regionKey) {
+                const labelMap = {
+                    'tohoku': '東北', 'kanto': '関東', 'chubu': '中部', 
+                    'kinki': '近畿', 'chugoku-shikoku': '中四国', 'kyushu': '九州'
+                };
+                titleEl.textContent = `${labelMap[regionKey] || regionKey} 地方マップ`;
+            } else if (isNational) {
+                titleEl.textContent = "全国 マップ";
+            } else {
+                titleEl.textContent = `${p} マップ`;
+            }
 
             if (!globalGeojsonData) {
                 // 読み込み中チェックをより確実にする
@@ -1184,7 +1220,13 @@
                 leafletMap.removeLayer(leafletGeoJsonLayer);
             }
 
-            const prefFeatures = isNational ? globalGeojsonData.features : globalGeojsonData.features.filter(f => getNormalizedPref(f.properties.N03_001) === p);
+            let prefFeatures;
+            if (regionKey) {
+                const regionPrefs = REGIONS[regionKey] || [];
+                prefFeatures = globalGeojsonData.features.filter(f => regionPrefs.includes(getNormalizedPref(f.properties.N03_001)));
+            } else {
+                prefFeatures = isNational ? globalGeojsonData.features : globalGeojsonData.features.filter(f => getNormalizedPref(f.properties.N03_001) === p);
+            }
 
             leafletGeoJsonLayer = L.geoJSON(prefFeatures, {
                 style: function (feature) {
@@ -1304,6 +1346,30 @@
                     leafletMap.fitBounds(leafletGeoJsonLayer.getBounds(), { padding: [30, 30], animate: true });
                 }
             }, 100);
+        }
+
+        function appCaptureMap() {
+            const area = document.getElementById('ui-map-capture-area');
+            const loading = document.getElementById('ui-map-loading');
+            loading.style.display = 'flex';
+            loading.innerHTML = '<span class="animate-spin text-2xl">📸</span> 画像を生成中...';
+            
+            html2canvas(area, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: "#ffffff",
+                scale: 2 // 高画質化
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `city-visit-map-${Date.now()}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+                loading.style.display = 'none';
+            }).catch(e => {
+                console.error(e);
+                alert("画像の保存に失敗しました。タイルサーバーの制限またはブラウザの仕様によるものです。");
+                loading.style.display = 'none';
+            });
         }
 
         function appRenderHistory() {
