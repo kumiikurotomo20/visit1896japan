@@ -159,6 +159,19 @@
             background: #cbd5e1;
             border-radius: 10px;
         }
+
+        /* LeafletとTailwindの干渉（max-width:100%等）を修正 */
+        .leaflet-container img,
+        .leaflet-container svg {
+            max-width: none !important;
+            height: auto !important;
+        }
+        
+        /* モーダル表示時のちらつき防止 */
+        #ui-map-container {
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 
@@ -1269,7 +1282,8 @@
                 leafletMap = L.map('ui-map-container', {
                     zoomControl: true,
                     minZoom: 5,
-                    maxZoom: 14
+                    maxZoom: 14,
+                    preferCanvas: true // SVGレイヤーのズレを防ぎ、キャプチャ時の再現性を高める
                 });
 
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
@@ -1400,13 +1414,15 @@
                 }
             }).addTo(leafletMap);
 
-            // Re-calc layout after modal display
+            // 表示のズレを防ぐため、サイズ再計算とバウンズ調整を確実に行う
             setTimeout(() => {
                 leafletMap.invalidateSize();
                 if (prefFeatures.length > 0) {
-                    leafletMap.fitBounds(leafletGeoJsonLayer.getBounds(), { padding: [30, 30], animate: true });
+                    leafletMap.fitBounds(leafletGeoJsonLayer.getBounds(), { padding: [30, 30], animate: false });
                 }
-            }, 100);
+                // アニメーション完了後にもう一度invalidateSize（念のため）
+                setTimeout(() => { leafletMap.invalidateSize(); }, 300);
+            }, 150);
         }
 
         function appCaptureMap(format = 'jpeg') {
