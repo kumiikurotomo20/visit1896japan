@@ -252,60 +252,28 @@
                 </div>
             </div>
 
-            <!-- 市区町村グリッド -->
             <div id="section-city-grid" class="card p-8 min-h-[300px]">
-                <div
-                    class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 border-b pb-6 gap-6">
                     <div class="flex-1 w-full">
                         <div class="flex flex-wrap items-center gap-4 mb-4">
-                            <h3 id="ui-current-pref-name" class="text-5xl font-black text-slate-800 tracking-tighter">
-                                訪問地</h3>
-                            <button onclick="appTogglePastCity()" id="btn-toggle-past-upper"
-                                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️
-                                過去分を隠す</button>
-                            <button onclick="appOpenMapModal()"
-                                class="px-4 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
-                                <span class="text-sm">🗺️</span> マップ表示
-                            </button>
-                            <button onclick="appOpenNationalMapModal()"
-                                class="px-4 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
-                                <span class="text-sm">🗾</span> 全国表示
-                            </button>
-                            <button onclick="appOpenRegionMapModal('kanto')"
-                                class="px-4 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
-                                <span class="text-sm">🗺️</span> 地方別表示
-                            </button>
-                        </div>
+                            <h3 id="ui-current-pref-name" class="text-5xl font-black text-slate-800 tracking-tighter">訪問地</h3>
+                            <button onclick="appTogglePastCity()" id="btn-toggle-past-upper" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-xl transition-all shadow-sm">👁️ 過去分を隠す</button>
+                            <button onclick="appOpenMapModal()" class="px-4 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">🗺️ 都道府県表示</button>
+                            <button onclick="appOpenNationalMapModal()" class="px-4 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">🗾 全国表示</button>
+                            <button onclick="appOpenRegionMapModal('hokkaido')" class="px-4 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">🗺️ 地方別表示</button>
                             
-                            <!-- Legend -->
+                            <!-- Legend inside the same flex row for alignment -->
                             <div class="flex items-center gap-3 ml-2 border-l pl-4 border-slate-200">
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-[#ff2d55]"></div><span
-                                        class="text-[10px] font-bold text-slate-400">1ST</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-[#ffcc00]"></div><span
-                                        class="text-[10px] font-bold text-slate-400">2ND</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-[#00e676]"></div><span
-                                        class="text-[10px] font-bold text-slate-400">3RD</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-[#00d4ff]"></div><span
-                                        class="text-[10px] font-bold text-slate-400">4TH</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-[#cbd5e1]"></div><span
-                                        class="text-[10px] font-bold text-slate-400">PAST</span>
-                                </div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#ff2d55]"></div><span class="text-[10px] font-bold text-slate-400">1ST</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#ffcc00]"></div><span class="text-[10px] font-bold text-slate-400">2ND</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#00e676]"></div><span class="text-[10px] font-bold text-slate-400">3RD</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#00d4ff]"></div><span class="text-[10px] font-bold text-slate-400">4TH</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#cbd5e1]"></div><span class="text-[10px] font-bold text-slate-400">PAST</span></div>
                             </div>
                         </div>
                     </div>
                     <div class="text-right whitespace-nowrap mb-2">
-                        <span id="ui-pref-fraction"
-                            class="text-xl font-black bg-slate-900 text-white px-6 py-2 rounded-2xl shadow-lg">0 /
-                            0</span>
+                        <span id="ui-pref-fraction" class="text-xl font-black bg-slate-900 text-white px-6 py-2 rounded-2xl shadow-lg">0 / 0</span>
                     </div>
                 </div>
                 <div id="ui-city-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
@@ -397,6 +365,7 @@
                         <tbody id="ui-manual-body" class="divide-y divide-slate-50"></tbody>
                     </table>
                 </div>
+            </div>
         </div>
     </main>
 
