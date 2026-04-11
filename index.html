@@ -269,20 +269,12 @@
                             </button>
                             <button onclick="appOpenNationalMapModal()"
                                 class="px-4 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
-                                <span class="text-sm">🗾</span> 全国マップ表示
+                                <span class="text-sm">🗾</span> 全国表示
                             </button>
-                        </div>
-                        
-                        <!-- 地方別マップボタン -->
-                        <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-50">
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mr-2">地方別マップ:</span>
-                            <button onclick="appOpenRegionMapModal('hokkaido')" class="px-3 py-1.5 bg-slate-50 hover:bg-indigo-500 hover:text-white text-slate-500 text-[10px] font-black rounded-xl transition-all active:scale-95 shadow-sm">北海道</button>
-                            <button onclick="appOpenRegionMapModal('tohoku')" class="px-3 py-1.5 bg-slate-50 hover:bg-indigo-500 hover:text-white text-slate-500 text-[10px] font-black rounded-xl transition-all active:scale-95 shadow-sm">東北</button>
-                            <button onclick="appOpenRegionMapModal('kanto')" class="px-3 py-1.5 bg-slate-50 hover:bg-indigo-500 hover:text-white text-slate-500 text-[10px] font-black rounded-xl transition-all active:scale-95 shadow-sm">関東</button>
-                            <button onclick="appOpenRegionMapModal('chubu')" class="px-3 py-1.5 bg-slate-50 hover:bg-indigo-500 hover:text-white text-slate-500 text-[10px] font-black rounded-xl transition-all active:scale-95 shadow-sm">中部</button>
-                            <button onclick="appOpenRegionMapModal('kinki')" class="px-3 py-1.5 bg-slate-50 hover:bg-indigo-500 hover:text-white text-slate-500 text-[10px] font-black rounded-xl transition-all active:scale-95 shadow-sm">近畿</button>
-                            <button onclick="appOpenRegionMapModal('chugoku-shikoku')" class="px-3 py-1.5 bg-slate-50 hover:bg-indigo-500 hover:text-white text-slate-500 text-[10px] font-black rounded-xl transition-all active:scale-95 shadow-sm">中国・四国</button>
-                            <button onclick="appOpenRegionMapModal('kyushu-okinawa')" class="px-3 py-1.5 bg-slate-50 hover:bg-indigo-500 hover:text-white text-slate-500 text-[10px] font-black rounded-xl transition-all active:scale-95 shadow-sm">九州・沖縄</button>
+                            <button onclick="appOpenRegionMapModal('kanto')"
+                                class="px-4 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 text-[11px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1 active:scale-95">
+                                <span class="text-sm">🗺️</span> 地方別表示
+                            </button>
                         </div>
                             
                             <!-- Legend -->
@@ -385,19 +377,6 @@
                 </div>
             </div>
 
-            <!-- 市区町村種別 訪問統計 -->
-            <div id="section-type-stats" class="card p-8 overflow-hidden border-b-8 border-indigo-200">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-black text-xs text-indigo-400 tracking-widest uppercase italic">🏙️ 市・区・町・村別 訪問統計</h3>
-                    <span class="text-[9px] font-bold text-slate-400">※末尾文字（市/区/町/村）による分類集計</span>
-                </div>
-                <div class="overflow-x-auto scroll-hide">
-                    <table class="w-full border-separate border-spacing-1">
-                        <thead id="ui-type-stats-head"></thead>
-                        <tbody id="ui-type-stats-body"></tbody>
-                    </table>
-                </div>
-            </div>
 
             <!-- カスタム項目テーブル (自由入力) -->
             <div id="section-manual-entry" class="card p-8 border-b-8 border-emerald-900">
@@ -502,6 +481,16 @@
                             <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-[#cbd5e1]"></div><span class="text-[9px] font-bold text-slate-400">PAST</span></div>
                         </div>
                     </div>
+                </div>
+                <!-- Regional selector inside modal -->
+                <div class="mx-auto flex gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                    <button onclick="appRenderMap(false, 'hokkaido')" class="region-tab px-3 py-1 text-[10px] font-black rounded-xl hover:bg-white hover:shadow-sm transition-all">北海道</button>
+                    <button onclick="appRenderMap(false, 'tohoku')" class="region-tab px-3 py-1 text-[10px] font-black rounded-xl hover:bg-white hover:shadow-sm transition-all">東北</button>
+                    <button onclick="appRenderMap(false, 'kanto')" class="region-tab px-3 py-1 text-[10px] font-black rounded-xl hover:bg-white hover:shadow-sm transition-all">関東</button>
+                    <button onclick="appRenderMap(false, 'chubu')" class="region-tab px-3 py-1 text-[10px] font-black rounded-xl hover:bg-white hover:shadow-sm transition-all">中部</button>
+                    <button onclick="appRenderMap(false, 'kinki')" class="region-tab px-3 py-1 text-[10px] font-black rounded-xl hover:bg-white hover:shadow-sm transition-all">近畿</button>
+                    <button onclick="appRenderMap(false, 'chugoku-shikoku')" class="region-tab px-3 py-1 text-[10px] font-black rounded-xl hover:bg-white hover:shadow-sm transition-all">中国・四国</button>
+                    <button onclick="appRenderMap(false, 'kyushu-okinawa')" class="region-tab px-3 py-1 text-[10px] font-black rounded-xl hover:bg-white hover:shadow-sm transition-all">九州・沖縄</button>
                 </div>
                 <div class="flex items-center gap-3">
                     <button onclick="appCaptureMap('jpeg')"
