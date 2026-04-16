@@ -1713,11 +1713,11 @@
                 }
 
                 if (bestRecords.length <= appState.records.length) {
-                    alert(\`現在のデータ(\${appState.records.length}件)以上のバックアップが見つかりませんでした。(バックアップ最大件数: \${bestRecords.length}件)\`);
+                    alert(`現在のデータ(${appState.records.length}件)以上のバックアップが見つかりませんでした。(バックアップ最大件数: ${bestRecords.length}件)`);
                     return;
                 }
 
-                if (confirm(\`ブラウザ内に \${bestRecords.length} 件の記録バックアップが見つかりました。(現在の \${appState.records.length} 件を上書きしてクラウドに保存しますか？)\`)) {
+                if (confirm(`ブラウザ内に ${bestRecords.length} 件の記録バックアップが見つかりました。(現在の ${appState.records.length} 件を上書きしてクラウドに保存しますか？)`)) {
                     appState.records = bestRecords;
                     // 同時に設定のバックアップがあれば復旧
                     const bkupCfg = localStorage.getItem('visit_v95_cfg_backup');
