@@ -568,7 +568,8 @@
                 </div>
             </div>
 
-            <div class="pt-8 flex justify-end gap-4 border-t border-slate-100">
+            <div class="pt-8 flex justify-between items-center gap-4 border-t border-slate-100">
+                <button onclick="appAttemptDataRecovery()" class="px-6 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-[10px] active:scale-95 transition-all outline outline-1 outline-rose-200">⚠️ ブラウザ内のバックアップからデータを復旧する</button>
                 <button onclick="appSaveSettings()"
                     class="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black shadow-2xl active:scale-95 transition-all">設定を保存して反映</button>
             </div>
@@ -747,14 +748,16 @@
                         const data = doc.data();
                         let needsRender = false;
 
-                        // 【重要】リモートにある記録がローカルより極端に少ない（または空）の場合は、
-                        // 上書きせずにローカルのデータをリモートに共有する
+                        // 【重要】リモートにある記録がローカルより極端に少ない（大半が消失している）場合は、
+                        // 古い端末の誤上書きとみなし、ローカルのデータを優先してクラウドを復旧させる
                         if (data.records && Array.isArray(data.records)) {
-                            if (data.records.length < appState.records.length && data.records.length === 0) {
-                                // クラウドが空なので、ローカルの記録をクラウドに送り込む
+                            if (appState.records.length > data.records.length + 10) {
+                                // クラウドデータがローカルより10件以上少ない＝異常な減少があったと判断
+                                // ローカルを正としてクラウドに書き戻す
                                 appRenderAll(false);
                                 return;
                             }
+                            
                             // 端末が新しく、ローカル記録がゼロの場合はクラウドの記録を無条件に受け入れる
                             if (appState.records.length === 0 || JSON.stringify(appState.records) !== JSON.stringify(data.records)) {
                                 appState.records = data.records;
@@ -775,11 +778,6 @@
                             needsRender = true;
                         }
 
-                        if (data.manualItems && JSON.stringify(appState.manualItems) !== JSON.stringify(data.manualItems)) {
-                            appState.manualItems = data.manualItems;
-                            needsRender = true;
-                        }
-
                         if (needsRender) {
                             appRenderAll(true);
                         }
@@ -792,7 +790,10 @@
                 });
             }
 
-            appRenderAll();
+            // 【重大なバグの修正】
+            // 初期化時にappRenderAll()を呼ぶと、Firebaseデータの受信前にローカルの古いデータでクラウドを上書きしてしまう問題があったため、
+            // preventFirebaseSave = true を指定して、初期描画のみに限定する。
+            appRenderAll(true);
         }
 
         // --- ユーティリティ関数 ---
@@ -1670,6 +1671,54 @@
             document.getElementById('modal-settings').style.display = 'none';
             updateActiveCycle();
             appRenderAll();
+        }
+
+        function appAttemptDataRecovery() {
+            try {
+                const bkupRecs = localStorage.getItem('visit_v95_recs_backup');
+                const prevVerRecs = localStorage.getItem('kumiikurotomo_visit_state_v9');
+                const otherVerRecs = localStorage.getItem('shikuchoson_visit_recs');
+                
+                let bestRecords = [];
+                let msg = "";
+
+                if (bkupRecs) {
+                    const parsed = JSON.parse(bkupRecs);
+                    if (Array.isArray(parsed) && parsed.length > bestRecords.length) bestRecords = parsed;
+                }
+                if (prevVerRecs) {
+                    const parsed = JSON.parse(prevVerRecs);
+                    if (parsed && Array.isArray(parsed.records) && parsed.records.length > bestRecords.length) bestRecords = parsed.records;
+                }
+                if (otherVerRecs) {
+                    const parsed = JSON.parse(otherVerRecs);
+                    if (Array.isArray(parsed) && parsed.length > bestRecords.length) bestRecords = parsed;
+                }
+
+                if (bestRecords.length === 0) {
+                    alert("ブラウザ内に復旧可能なバックアップデータが見つかりませんでした。");
+                    return;
+                }
+
+                if (bestRecords.length <= appState.records.length) {
+                    alert(\`現在のデータ(\${appState.records.length}件)以上のバックアップが見つかりませんでした。(バックアップ最大件数: \${bestRecords.length}件)\`);
+                    return;
+                }
+
+                if (confirm(\`ブラウザ内に \${bestRecords.length} 件の記録バックアップが見つかりました。(現在の \${appState.records.length} 件を上書きしてクラウドに保存しますか？)\`)) {
+                    appState.records = bestRecords;
+                    // 同時に設定のバックアップがあれば復旧
+                    const bkupCfg = localStorage.getItem('visit_v95_cfg_backup');
+                    if (bkupCfg) {
+                        try { appState.config = JSON.parse(bkupCfg); } catch(e) {}
+                    }
+                    appRenderAll();
+                    alert("バックアップからデータを復元し、クラウドへ送信しました。他の端末を開く際は、一度リロードして同期をお待ちください。");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("データの復旧中にエラーが発生しました。");
+            }
         }
 
         /** 自治体ごとの「初訪問」のみを抽出 */
