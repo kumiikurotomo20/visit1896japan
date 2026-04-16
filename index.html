@@ -705,27 +705,39 @@
             const cLocal = localStorage.getItem('visit_v95_cfg');
             const mLocal = localStorage.getItem('visit_v95_mergers');
             const mnLocal = localStorage.getItem('visit_v95_manual');
-            if (rLocal) {
-                const p = JSON.parse(rLocal);
-                if (p.length > loadedRecs.length) loadedRecs = p;
-            }
-            if (cLocal) loadedCfg = JSON.parse(cLocal);
-            if (mLocal) loadedMergers = JSON.parse(mLocal);
-            if (mnLocal) appState.manualItems = JSON.parse(mnLocal);
+            
+            try {
+                if (rLocal && rLocal !== "undefined") {
+                    const p = JSON.parse(rLocal);
+                    if (p && p.length > loadedRecs.length) loadedRecs = p;
+                }
+            } catch (e) { console.error("Parse error for records", e); }
+            
+            try {
+                if (cLocal && cLocal !== "undefined") loadedCfg = JSON.parse(cLocal);
+            } catch (e) { console.error("Parse error for config", e); }
+            
+            try {
+                if (mLocal && mLocal !== "undefined") loadedMergers = JSON.parse(mLocal);
+            } catch (e) { console.error("Parse error for mergers", e); }
+            
+            try {
+                if (mnLocal && mnLocal !== "undefined") appState.manualItems = JSON.parse(mnLocal);
+            } catch (e) { console.error("Parse error for manual", e); }
 
             // 読み込んだデータをセット
-            appState.records = loadedRecs;
-            if (loadedCfg) {
+            appState.records = Array.isArray(loadedRecs) ? loadedRecs : [];
+            if (loadedCfg && typeof loadedCfg === 'object') {
                 if (!Array.isArray(loadedCfg.prefDenominators)) {
                     const old = loadedCfg.prefDenominators || { ...DEFAULT_PREF_DATA };
                     loadedCfg.prefDenominators = [{ ...old }, { ...old }, { ...old }, { ...old }];
                 }
                 appState.config = loadedCfg;
             }
-            appState.mergers = loadedMergers;
+            appState.mergers = Array.isArray(loadedMergers) ? loadedMergers : [];
 
             // 万が一のためのバックアップ作成
-            if (appState.records.length > 0) {
+            if (appState.records && appState.records.length > 0) {
                 localStorage.setItem('visit_v95_recs_backup', JSON.stringify(appState.records));
                 localStorage.setItem('visit_v95_cfg_backup', JSON.stringify(appState.config));
             }
